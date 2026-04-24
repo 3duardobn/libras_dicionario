@@ -119,7 +119,9 @@ class ApiService {
 
           results.add(DictItem(
             title: palavra,
-            description: item['descricao'] ?? item['exemplo'],
+            description: item['descricao'],
+            exemplo: item['exemplo'],
+            libras: item['libras'],
             videoUrl: videoUrl,
             source: 'INES',
           ));
