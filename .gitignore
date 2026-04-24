@@ -117,3 +117,15 @@ app.*.symbols
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/dev/ci/**/Gemfile.lock
+
+libras_dictionary/.dart_tool/
+libras_dictionary/build/
+libras_dictionary/build/
+libras_dictionary/.dart_tool/
+libras_dictionary/.idea/
+libras_dictionary/android/.gradle/
+libras_dictionary/windows/
+libras_dictionary/linux/
+libras_dictionary/macos/
+libras_dictionary/ios/
+libras_dictionary/web/
