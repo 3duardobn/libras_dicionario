@@ -118,26 +118,94 @@ class DictionaryItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
-            padding: const EdgeInsets.all(8.0),
-            color: item.source == 'INES' ? Colors.blue.shade100 : Colors.green.shade100,
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            color: item.source == 'INES' ? Colors.blue.shade600 : Colors.green.shade600,
             child: Text(
               '${item.title} (${item.source})',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: Colors.white,
+              ),
             ),
           ),
-          if (item.description != null && item.description!.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Html(data: item.description!),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (item.description != null && item.description!.isNotEmpty) ...[
+                  const Text('Descrição:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 4),
+                  Html(
+                    data: item.description!,
+                    style: {
+                      "body": Style(
+                        margin: Margins.zero,
+                        padding: HtmlPaddings.zero,
+                        fontSize: FontSize(16.0),
+                      ),
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (item.exemplo != null && item.exemplo!.isNotEmpty) ...[
+                  const Text('Exemplo:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 4),
+                  Html(
+                    data: item.exemplo!,
+                    style: {
+                      "body": Style(
+                        margin: Margins.zero,
+                        padding: HtmlPaddings.zero,
+                        fontSize: FontSize(16.0),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (item.libras != null && item.libras!.isNotEmpty) ...[
+                  const Text('Tradução Libras (Glosa):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.all(8.0),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Text(
+                      item.libras!,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 14.0,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ],
             ),
+          ),
           if (item.youtubeId != null && item.youtubeId!.isNotEmpty)
-            YoutubePlayerWidget(youtubeId: item.youtubeId!),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: YoutubePlayerWidget(youtubeId: item.youtubeId!),
+            ),
           if (item.videoUrl != null && item.videoUrl!.isNotEmpty)
-            ChewieVideoWidget(videoUrl: item.videoUrl!),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: ChewieVideoWidget(videoUrl: item.videoUrl!),
+            ),
         ],
       ),
     );
@@ -193,6 +261,7 @@ class ChewieVideoWidget extends StatefulWidget {
 class _ChewieVideoWidgetState extends State<ChewieVideoWidget> {
   late VideoPlayerController _videoPlayerController;
   ChewieController? _chewieController;
+  bool _hasError = false;
 
   @override
   void initState() {
@@ -201,19 +270,44 @@ class _ChewieVideoWidgetState extends State<ChewieVideoWidget> {
   }
 
   void _initPlayer() async {
-    _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
-    await _videoPlayerController.initialize();
-    _chewieController = ChewieController(
-      videoPlayerController: _videoPlayerController,
-      autoPlay: false,
-      looping: false,
-      aspectRatio: _videoPlayerController.value.aspectRatio,
-    );
-    setState(() {});
+    try {
+      _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+      await _videoPlayerController.initialize();
+      await _videoPlayerController.setVolume(0.0); // INES clips are mostly visual
+      _chewieController = ChewieController(
+        videoPlayerController: _videoPlayerController,
+        autoPlay: true,
+        looping: true, // Acts like a GIF
+        aspectRatio: _videoPlayerController.value.aspectRatio,
+        showControls: true,
+      );
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_hasError) {
+      return const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Center(
+          child: Text(
+            'Erro ao carregar o vídeo. Pode ser um problema de rede ou o vídeo não está mais disponível.',
+            style: TextStyle(color: Colors.red),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
     if (_chewieController != null && _videoPlayerController.value.isInitialized) {
       return AspectRatio(
         aspectRatio: _videoPlayerController.value.aspectRatio,
