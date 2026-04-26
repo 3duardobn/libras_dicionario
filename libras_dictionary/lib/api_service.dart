@@ -5,23 +5,27 @@ import 'models.dart';
 class ApiService {
   List<dynamic>? _cachedInesData;
 
-  Future<List<DictItem>> search(String query) async {
+  Future<List<DictItem>> search(String query, {String source = 'Ambos'}) async {
     final List<DictItem> results = [];
 
     // Fetch from RedeSurdos
-    try {
-      final redeSurdosResults = await _fetchRedeSurdos(query);
-      results.addAll(redeSurdosResults);
-    } catch (e) {
-      // Ignored for now
+    if (source == 'Ambos' || source == 'RedeSurdos') {
+      try {
+        final redeSurdosResults = await _fetchRedeSurdos(query);
+        results.addAll(redeSurdosResults);
+      } catch (e) {
+        // Ignored for now
+      }
     }
 
     // Fetch from INES
-    try {
-      final inesResults = await _fetchInes(query);
-      results.addAll(inesResults);
-    } catch (e) {
-      // Ignored for now
+    if (source == 'Ambos' || source == 'INES') {
+      try {
+        final inesResults = await _fetchInes(query);
+        results.addAll(inesResults);
+      } catch (e) {
+        // Ignored for now
+      }
     }
 
     return results;
