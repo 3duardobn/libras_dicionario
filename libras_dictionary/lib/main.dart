@@ -201,6 +201,15 @@ class DictionaryItemCard extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 16.0),
               child: YoutubePlayerWidget(youtubeId: item.youtubeId!),
             ),
+          if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Image.network(
+                item.imageUrl!,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const SizedBox(),
+              ),
+            ),
           if (item.videoUrl != null && item.videoUrl!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 16.0),
