@@ -311,8 +311,8 @@ class _ChewieVideoWidgetState extends State<ChewieVideoWidget> {
   void _initPlayer() async {
     try {
       _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
-      await _videoPlayerController.initialize();
       await _videoPlayerController.setVolume(0.0); // INES clips are mostly visual
+      await _videoPlayerController.initialize();
       _chewieController = ChewieController(
         videoPlayerController: _videoPlayerController,
         autoPlay: true,

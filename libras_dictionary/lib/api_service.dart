@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:diacritic/diacritic.dart';
 import 'models.dart';
 
 class ApiService {
@@ -33,14 +34,20 @@ class ApiService {
 
   Future<List<DictItem>> _fetchRedeSurdos(String query) async {
     final encodedQuery = Uri.encodeQueryComponent(query);
-    final RegExp wordBoundary = RegExp(r'(^|\s|[.,!?])' + RegExp.escape(query) + r'(?=\s|[.,!?]|$)', caseSensitive: false);
+    final normalizedQuery = removeDiacritics(query).toLowerCase();
+
     final url = Uri.parse('https://redesurdosce.ufc.br/wp-json/wp/v2/posts?search=$encodedQuery');
     final response = await http.get(url);
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
       final filteredData = data.where((item) {
         final title = item['title']['rendered'] as String?;
-        return title != null && wordBoundary.hasMatch(title);
+        final content = item['content']['rendered'] as String?;
+
+        final normalizedTitle = title != null ? removeDiacritics(title).toLowerCase() : '';
+        final normalizedContent = content != null ? removeDiacritics(content).toLowerCase() : '';
+
+        return normalizedTitle.contains(normalizedQuery) || normalizedContent.contains(normalizedQuery);
       }).toList();
       return filteredData.map((item) {
         final title = item['title']['rendered'];
@@ -99,14 +106,18 @@ class ApiService {
     }
 
     if (_cachedInesData != null) {
-      final String lowerQuery = query.toLowerCase();
-      final RegExp wordBoundary = RegExp(r'(^|\s|[.,!?])' + RegExp.escape(lowerQuery) + r'(?=\s|[.,!?]|$)', caseSensitive: false);
+      final String normalizedQuery = removeDiacritics(query).toLowerCase();
       final List<DictItem> results = [];
 
       for (var item in _cachedInesData!) {
         final String? palavra = item['palavra'];
-        // Check if the exact word is present
-        if (palavra != null && wordBoundary.hasMatch(palavra)) {
+        final String? descricao = item['descricao'];
+
+        final normalizedPalavra = palavra != null ? removeDiacritics(palavra).toLowerCase() : '';
+        final normalizedDescricao = descricao != null ? removeDiacritics(descricao).toLowerCase() : '';
+
+        // Check if the query is present anywhere in the word or description
+        if (normalizedPalavra.contains(normalizedQuery) || normalizedDescricao.contains(normalizedQuery)) {
           final String? videoFilename = item['video'];
           String? videoUrl;
           if (videoFilename != null && videoFilename.isNotEmpty) {
@@ -120,7 +131,7 @@ class ApiService {
           }
 
           results.add(DictItem(
-            title: palavra,
+            title: palavra ?? 'Sem título',
             description: item['descricao'],
             exemplo: item['exemplo'],
             libras: item['libras'],
