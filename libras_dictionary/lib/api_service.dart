@@ -1,27 +1,32 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:diacritic/diacritic.dart';
 import 'models.dart';
 
 class ApiService {
   List<dynamic>? _cachedInesData;
 
-  Future<List<DictItem>> search(String query) async {
+  Future<List<DictItem>> search(String query, {String source = 'Ambos'}) async {
     final List<DictItem> results = [];
 
     // Fetch from RedeSurdos
-    try {
-      final redeSurdosResults = await _fetchRedeSurdos(query);
-      results.addAll(redeSurdosResults);
-    } catch (e) {
-      // Ignored for now
+    if (source == 'Ambos' || source == 'RedeSurdos') {
+      try {
+        final redeSurdosResults = await _fetchRedeSurdos(query);
+        results.addAll(redeSurdosResults);
+      } catch (e) {
+        // Ignored for now
+      }
     }
 
     // Fetch from INES
-    try {
-      final inesResults = await _fetchInes(query);
-      results.addAll(inesResults);
-    } catch (e) {
-      // Ignored for now
+    if (source == 'Ambos' || source == 'INES') {
+      try {
+        final inesResults = await _fetchInes(query);
+        results.addAll(inesResults);
+      } catch (e) {
+        // Ignored for now
+      }
     }
 
     return results;
@@ -29,14 +34,20 @@ class ApiService {
 
   Future<List<DictItem>> _fetchRedeSurdos(String query) async {
     final encodedQuery = Uri.encodeQueryComponent(query);
-    final RegExp wordBoundary = RegExp(r'(^|\s|[.,!?])' + RegExp.escape(query) + r'(?=\s|[.,!?]|$)', caseSensitive: false);
+    final normalizedQuery = removeDiacritics(query).toLowerCase();
+
     final url = Uri.parse('https://redesurdosce.ufc.br/wp-json/wp/v2/posts?search=$encodedQuery');
     final response = await http.get(url);
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
       final filteredData = data.where((item) {
         final title = item['title']['rendered'] as String?;
-        return title != null && wordBoundary.hasMatch(title);
+        final content = item['content']['rendered'] as String?;
+
+        final normalizedTitle = title != null ? removeDiacritics(title).toLowerCase() : '';
+        final normalizedContent = content != null ? removeDiacritics(content).toLowerCase() : '';
+
+        return normalizedTitle.contains(normalizedQuery) || normalizedContent.contains(normalizedQuery);
       }).toList();
       return filteredData.map((item) {
         final title = item['title']['rendered'];
@@ -95,18 +106,37 @@ class ApiService {
     }
 
     if (_cachedInesData != null) {
-      final String lowerQuery = query.toLowerCase();
-      final RegExp wordBoundary = RegExp(r'(^|\s|[.,!?])' + RegExp.escape(lowerQuery) + r'(?=\s|[.,!?]|$)', caseSensitive: false);
+      final String normalizedQuery = removeDiacritics(query).toLowerCase();
       final List<DictItem> results = [];
 
       for (var item in _cachedInesData!) {
         final String? palavra = item['palavra'];
-        // Check if the exact word is present
-        if (palavra != null && wordBoundary.hasMatch(palavra)) {
-          final String? videoFilename = item['video'];
+        final String? descricao = item['descricao'];
+
+        final normalizedPalavra = palavra != null ? removeDiacritics(palavra).toLowerCase() : '';
+        final normalizedDescricao = descricao != null ? removeDiacritics(descricao).toLowerCase() : '';
+
+        // Check if the query is present anywhere in the word or description
+        if (normalizedPalavra.contains(normalizedQuery) || normalizedDescricao.contains(normalizedQuery)) {
+          final String? videoFilenameRaw = item['video'];
           String? videoUrl;
-          if (videoFilename != null && videoFilename.isNotEmpty) {
-            videoUrl = 'https://dicionario.ines.gov.br/public/media/palavras/videos/$videoFilename';
+          if (videoFilenameRaw != null && videoFilenameRaw.isNotEmpty) {
+            // Handle cases where the video field contains an HTML source tag
+            if (videoFilenameRaw.contains('<source') || videoFilenameRaw.contains('src=')) {
+              final match = RegExp(r'src="([^"]+)"').firstMatch(videoFilenameRaw);
+              if (match != null) {
+                String src = match.group(1)!;
+                if (src.startsWith('public/')) {
+                  videoUrl = 'https://dicionario.ines.gov.br/$src';
+                } else if (src.startsWith('http')) {
+                  videoUrl = src;
+                } else {
+                  videoUrl = 'https://dicionario.ines.gov.br/public/media/palavras/videos/$src';
+                }
+              }
+            } else {
+              videoUrl = 'https://dicionario.ines.gov.br/public/media/palavras/videos/$videoFilenameRaw';
+            }
           }
 
           final String? imageFilename = item['image'];
@@ -116,7 +146,7 @@ class ApiService {
           }
 
           results.add(DictItem(
-            title: palavra,
+            title: palavra ?? 'Sem título',
             description: item['descricao'],
             exemplo: item['exemplo'],
             libras: item['libras'],
