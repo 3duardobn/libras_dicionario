@@ -135,7 +135,13 @@ class ApiService {
                 }
               }
             } else {
-              videoUrl = 'https://dicionario.ines.gov.br/public/media/palavras/videos/$videoFilenameRaw';
+              if (videoFilenameRaw.startsWith('public/')) {
+                videoUrl = 'https://dicionario.ines.gov.br/$videoFilenameRaw';
+              } else if (videoFilenameRaw.startsWith('http')) {
+                videoUrl = videoFilenameRaw;
+              } else {
+                videoUrl = 'https://dicionario.ines.gov.br/public/media/palavras/videos/$videoFilenameRaw';
+              }
             }
           }
 
