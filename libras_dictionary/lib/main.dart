@@ -36,9 +36,16 @@ class DictionaryHomePage extends StatefulWidget {
 class _DictionaryHomePageState extends State<DictionaryHomePage> {
   final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
-  List<DictItem> _results = [];
+  List<DictItem> _allSearchResults = []; // Armazena todos os resultados da última busca
   bool _isLoading = false;
   String _selectedSource = 'Ambos';
+  String _lastSearchQuery = '';
+
+  // Filtra os resultados locais com base na fonte selecionada
+  List<DictItem> get _filteredResults {
+    if (_selectedSource == 'Ambos') return _allSearchResults;
+    return _allSearchResults.where((item) => item.source == _selectedSource).toList();
+  }
 
   void _performSearch() async {
     final query = _searchController.text.trim();
@@ -46,19 +53,24 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
 
     setState(() {
       _isLoading = true;
-      _results = [];
+      _allSearchResults = [];
+      _lastSearchQuery = query;
     });
 
-    final results = await _apiService.search(query, source: _selectedSource);
+    // Sempre busca com "Ambos" para ter o cache completo localmente,
+    // a menos que você queira restringir a busca na API por performance.
+    // Mas para o comportamento solicitado, buscamos tudo e filtramos na UI.
+    final results = await _apiService.search(query, source: 'Ambos');
 
     setState(() {
-      _results = results;
+      _allSearchResults = results;
       _isLoading = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final displayResults = _filteredResults;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dicionário Libras'),
@@ -109,7 +121,10 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
                 setState(() {
                   _selectedSource = newSelection.first;
                 });
-                if (_searchController.text.trim().isNotEmpty) {
+                
+                // Se o campo de texto mudou em relação à última busca, refaz a busca.
+                // Caso contrário, apenas o getter `_filteredResults` atualizará a lista na tela.
+                if (_searchController.text.trim() != _lastSearchQuery && _searchController.text.trim().isNotEmpty) {
                   _performSearch();
                 }
               },
@@ -121,16 +136,16 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
               padding: EdgeInsets.all(32.0),
               child: CircularProgressIndicator(),
             ),
-          if (!_isLoading && _results.isEmpty && _searchController.text.isNotEmpty)
+          if (!_isLoading && displayResults.isEmpty && _lastSearchQuery.isNotEmpty)
             const Padding(
               padding: EdgeInsets.all(32.0),
-              child: Text('Nenhum resultado encontrado.'),
+              child: Text('Nenhum resultado encontrado para este filtro.'),
             ),
           Expanded(
             child: ListView.builder(
-              itemCount: _results.length,
+              itemCount: displayResults.length,
               itemBuilder: (context, index) {
-                return DictionaryItemCard(item: _results[index]);
+                return DictionaryItemCard(item: displayResults[index]);
               },
             ),
           ),
@@ -140,9 +155,16 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
   }
 }
 
-class DictionaryItemCard extends StatelessWidget {
+class DictionaryItemCard extends StatefulWidget {
   final DictItem item;
   const DictionaryItemCard({super.key, required this.item});
+
+  @override
+  State<DictionaryItemCard> createState() => _DictionaryItemCardState();
+}
+
+class _DictionaryItemCardState extends State<DictionaryItemCard> {
+  bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -154,97 +176,117 @@ class DictionaryItemCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-            color: item.source == 'INES' ? Colors.blue.shade600 : Colors.green.shade600,
-            child: Text(
-              '${item.title} (${item.source})',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-                color: Colors.white,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (item.description != null && item.description!.isNotEmpty) ...[
-                  const Text('Descrição:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 4),
-                  Html(
-                    data: item.description!,
-                    style: {
-                      "body": Style(
-                        margin: Margins.zero,
-                        padding: HtmlPaddings.zero,
-                        fontSize: FontSize(16.0),
-                      ),
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                if (item.exemplo != null && item.exemplo!.isNotEmpty) ...[
-                  const Text('Exemplo:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 4),
-                  Html(
-                    data: item.exemplo!,
-                    style: {
-                      "body": Style(
-                        margin: Margins.zero,
-                        padding: HtmlPaddings.zero,
-                        fontSize: FontSize(16.0),
-                        fontStyle: FontStyle.italic,
-                      ),
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                if (item.libras != null && item.libras!.isNotEmpty) ...[
-                  const Text('Tradução Libras (Glosa):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.all(8.0),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
+          InkWell(
+            onTap: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              color: widget.item.source == 'INES' ? Colors.blue.shade600 : Colors.green.shade600,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
                     child: Text(
-                      item.libras!,
+                      '${widget.item.title} (${widget.item.source})',
                       style: const TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 14.0,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: Colors.white,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  Icon(
+                    _isExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: Colors.white,
+                  ),
                 ],
-              ],
-            ),
-          ),
-          if (item.youtubeId != null && item.youtubeId!.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: YoutubePlayerWidget(youtubeId: item.youtubeId!),
-            ),
-          if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: Image.network(
-                item.imageUrl!,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => const SizedBox(),
               ),
             ),
-          if (item.videoUrl != null && item.videoUrl!.isNotEmpty)
+          ),
+          if (_isExpanded) ...[
             Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: ChewieVideoWidget(videoUrl: item.videoUrl!),
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (widget.item.description != null && widget.item.description!.isNotEmpty) ...[
+                    const Text('Descrição:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 4),
+                    Html(
+                      data: widget.item.description!,
+                      style: {
+                        "body": Style(
+                          margin: Margins.zero,
+                          padding: HtmlPaddings.zero,
+                          fontSize: FontSize(16.0),
+                        ),
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  if (widget.item.exemplo != null && widget.item.exemplo!.isNotEmpty) ...[
+                    const Text('Exemplo:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 4),
+                    Html(
+                      data: widget.item.exemplo!,
+                      style: {
+                        "body": Style(
+                          margin: Margins.zero,
+                          padding: HtmlPaddings.zero,
+                          fontSize: FontSize(16.0),
+                          fontStyle: FontStyle.italic,
+                        ),
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  if (widget.item.libras != null && widget.item.libras!.isNotEmpty) ...[
+                    const Text('Tradução Libras (Glosa):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.all(8.0),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Text(
+                        widget.item.libras!,
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 14.0,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ],
+              ),
             ),
+            if (widget.item.youtubeId != null && widget.item.youtubeId!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: YoutubePlayerWidget(youtubeId: widget.item.youtubeId!),
+              ),
+            if (widget.item.imageUrl != null && widget.item.imageUrl!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: Image.network(
+                  widget.item.imageUrl!,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                ),
+              ),
+            if (widget.item.videoUrl != null && widget.item.videoUrl!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: ChewieVideoWidget(videoUrl: widget.item.videoUrl!),
+              ),
+          ],
         ],
       ),
     );
@@ -268,8 +310,9 @@ class _YoutubePlayerWidgetState extends State<YoutubePlayerWidget> {
     _controller = YoutubePlayerController(
       initialVideoId: widget.youtubeId,
       flags: const YoutubePlayerFlags(
-        autoPlay: false,
+        autoPlay: true,
         mute: false,
+        loop: true,
       ),
     );
   }
@@ -309,26 +352,63 @@ class _ChewieVideoWidgetState extends State<ChewieVideoWidget> {
   }
 
   void _initPlayer() async {
+    setState(() {
+      _hasError = false;
+      _chewieController = null;
+    });
     try {
-      _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
-      await _videoPlayerController.setVolume(0.0); // INES clips are mostly visual
+      // Adicionando um timestamp para evitar cache e problemas de range no servidor do INES
+      final uri = Uri.parse(widget.videoUrl);
+      final finalUrl = uri.replace(queryParameters: {
+        ...uri.queryParameters,
+        'v': DateTime.now().millisecondsSinceEpoch.toString(),
+      }).toString();
+
+      _videoPlayerController = VideoPlayerController.networkUrl(
+        Uri.parse(finalUrl),
+        httpHeaders: {
+          'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+          'Accept': '*/*',
+        },
+      );
       await _videoPlayerController.initialize();
+      await _videoPlayerController.setVolume(0.0); // INES clips are mostly visual
+      
       _chewieController = ChewieController(
         videoPlayerController: _videoPlayerController,
         autoPlay: true,
         looping: true, // Acts like a GIF
         aspectRatio: _videoPlayerController.value.aspectRatio,
         showControls: true,
+        errorBuilder: (context, errorMessage) {
+          return Center(
+            child: Text(
+              errorMessage,
+              style: const TextStyle(color: Colors.white),
+            ),
+          );
+        },
       );
       if (mounted) {
         setState(() {});
       }
     } catch (e) {
+      debugPrint('Erro ao inicializar vídeo: $e');
       if (mounted) {
         setState(() {
           _hasError = true;
         });
       }
+    }
+  }
+
+  @override
+  void didUpdateWidget(ChewieVideoWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.videoUrl != widget.videoUrl) {
+      _videoPlayerController.dispose();
+      _chewieController?.dispose();
+      _initPlayer();
     }
   }
 
