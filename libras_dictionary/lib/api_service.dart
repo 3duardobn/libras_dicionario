@@ -29,11 +29,16 @@ class ApiService {
 
   Future<List<DictItem>> _fetchRedeSurdos(String query) async {
     final encodedQuery = Uri.encodeQueryComponent(query);
+    final RegExp wordBoundary = RegExp(r'(^|\s|[.,!?])' + RegExp.escape(query) + r'(?=\s|[.,!?]|$)', caseSensitive: false);
     final url = Uri.parse('https://redesurdosce.ufc.br/wp-json/wp/v2/posts?search=$encodedQuery');
     final response = await http.get(url);
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
-      return data.map((item) {
+      final filteredData = data.where((item) {
+        final title = item['title']['rendered'] as String?;
+        return title != null && wordBoundary.hasMatch(title);
+      }).toList();
+      return filteredData.map((item) {
         final title = item['title']['rendered'];
         final content = item['content']['rendered'];
         final excerpt = item['excerpt']['rendered'];
@@ -91,15 +96,23 @@ class ApiService {
 
     if (_cachedInesData != null) {
       final String lowerQuery = query.toLowerCase();
+      final RegExp wordBoundary = RegExp(r'(^|\s|[.,!?])' + RegExp.escape(lowerQuery) + r'(?=\s|[.,!?]|$)', caseSensitive: false);
       final List<DictItem> results = [];
 
       for (var item in _cachedInesData!) {
         final String? palavra = item['palavra'];
-        if (palavra != null && palavra.toLowerCase().contains(lowerQuery)) {
+        // Check if the exact word is present
+        if (palavra != null && wordBoundary.hasMatch(palavra)) {
           final String? videoFilename = item['video'];
           String? videoUrl;
           if (videoFilename != null && videoFilename.isNotEmpty) {
             videoUrl = 'https://dicionario.ines.gov.br/public/media/palavras/videos/$videoFilename';
+          }
+
+          final String? imageFilename = item['image'];
+          String? imageUrl;
+          if (imageFilename != null && imageFilename.isNotEmpty) {
+            imageUrl = 'https://dicionario.ines.gov.br/public/media/palavras/images/$imageFilename';
           }
 
           results.add(DictItem(
@@ -108,6 +121,7 @@ class ApiService {
             exemplo: item['exemplo'],
             libras: item['libras'],
             videoUrl: videoUrl,
+            imageUrl: imageUrl,
             source: 'INES',
           ));
         }

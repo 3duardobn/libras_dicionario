@@ -201,6 +201,15 @@ class DictionaryItemCard extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 16.0),
               child: YoutubePlayerWidget(youtubeId: item.youtubeId!),
             ),
+          if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Image.network(
+                item.imageUrl!,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const SizedBox(),
+              ),
+            ),
           if (item.videoUrl != null && item.videoUrl!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 16.0),
@@ -271,7 +280,10 @@ class _ChewieVideoWidgetState extends State<ChewieVideoWidget> {
 
   void _initPlayer() async {
     try {
-      _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+      _videoPlayerController = VideoPlayerController.networkUrl(
+        Uri.parse(widget.videoUrl),
+        httpHeaders: {'User-Agent': 'Mozilla/5.0'},
+      );
       await _videoPlayerController.initialize();
       await _videoPlayerController.setVolume(0.0); // INES clips are mostly visual
       _chewieController = ChewieController(
