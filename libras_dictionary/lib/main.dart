@@ -101,31 +101,25 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: SegmentedButton<String>(
-              segments: const [
-                ButtonSegment<String>(
-                  value: 'Ambos',
-                  label: Text('Ambos'),
-                ),
-                ButtonSegment<String>(
-                  value: 'RedeSurdos',
-                  label: Text('Rede Surdos'),
-                ),
-                ButtonSegment<String>(
-                  value: 'INES',
-                  label: Text('INES'),
-                ),
+            child: DropdownButton<String>(
+              value: _selectedSource,
+              isExpanded: true,
+              items: const [
+                DropdownMenuItem(value: 'Ambos', child: Text('Ambos')),
+                DropdownMenuItem(value: 'INES', child: Text('INES')),
+                DropdownMenuItem(value: 'RedeSurdos', child: Text('Rede Surdos')),
+                DropdownMenuItem(value: 'UFV', child: Text('UFV')),
+                DropdownMenuItem(value: 'LibrasAcademicaUFF', child: Text('Libras Acadêmica UFF')),
+                DropdownMenuItem(value: 'SpreadTheSign', child: Text('SpreadTheSign')),
               ],
-              selected: <String>{_selectedSource},
-              onSelectionChanged: (Set<String> newSelection) {
-                setState(() {
-                  _selectedSource = newSelection.first;
-                });
-                
-                // Se o campo de texto mudou em relação à última busca, refaz a busca.
-                // Caso contrário, apenas o getter `_filteredResults` atualizará a lista na tela.
-                if (_searchController.text.trim() != _lastSearchQuery && _searchController.text.trim().isNotEmpty) {
-                  _performSearch();
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  setState(() {
+                    _selectedSource = newValue;
+                  });
+                  if (_searchController.text.trim() != _lastSearchQuery && _searchController.text.trim().isNotEmpty) {
+                    _performSearch();
+                  }
                 }
               },
             ),
@@ -184,7 +178,7 @@ class _DictionaryItemCardState extends State<DictionaryItemCard> {
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-              color: widget.item.source == 'INES' ? Colors.blue.shade600 : Colors.green.shade600,
+              color: getSourceColor(widget.item.source),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -445,5 +439,21 @@ class _ChewieVideoWidgetState extends State<ChewieVideoWidget> {
     _videoPlayerController.dispose();
     _chewieController?.dispose();
     super.dispose();
+  }
+}
+Color getSourceColor(String source) {
+  switch (source) {
+    case 'INES':
+      return Colors.blue.shade600;
+    case 'RedeSurdos':
+      return Colors.green.shade600;
+    case 'UFV':
+      return Colors.red.shade600;
+    case 'LibrasAcademicaUFF':
+      return Colors.purple.shade600;
+    case 'SpreadTheSign':
+      return Colors.orange.shade600;
+    default:
+      return Colors.grey.shade600;
   }
 }
