@@ -38,6 +38,7 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
   final TextEditingController _searchController = TextEditingController();
   List<DictItem> _results = [];
   bool _isLoading = false;
+  String _selectedSource = 'Ambos';
 
   void _performSearch() async {
     final query = _searchController.text.trim();
@@ -48,7 +49,7 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
       _results = [];
     });
 
-    final results = await _apiService.search(query);
+    final results = await _apiService.search(query, source: _selectedSource);
 
     setState(() {
       _results = results;
@@ -86,6 +87,35 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: SegmentedButton<String>(
+              segments: const [
+                ButtonSegment<String>(
+                  value: 'Ambos',
+                  label: Text('Ambos'),
+                ),
+                ButtonSegment<String>(
+                  value: 'RedeSurdos',
+                  label: Text('Rede Surdos'),
+                ),
+                ButtonSegment<String>(
+                  value: 'INES',
+                  label: Text('INES'),
+                ),
+              ],
+              selected: <String>{_selectedSource},
+              onSelectionChanged: (Set<String> newSelection) {
+                setState(() {
+                  _selectedSource = newSelection.first;
+                });
+                if (_searchController.text.trim().isNotEmpty) {
+                  _performSearch();
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
           if (_isLoading)
             const Padding(
               padding: EdgeInsets.all(32.0),
@@ -280,12 +310,9 @@ class _ChewieVideoWidgetState extends State<ChewieVideoWidget> {
 
   void _initPlayer() async {
     try {
-      _videoPlayerController = VideoPlayerController.networkUrl(
-        Uri.parse(widget.videoUrl),
-        httpHeaders: {'User-Agent': 'Mozilla/5.0'},
-      );
-      await _videoPlayerController.initialize();
+      _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
       await _videoPlayerController.setVolume(0.0); // INES clips are mostly visual
+      await _videoPlayerController.initialize();
       _chewieController = ChewieController(
         videoPlayerController: _videoPlayerController,
         autoPlay: true,
