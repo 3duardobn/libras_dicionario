@@ -112,6 +112,8 @@ class ApiService {
       final String normalizedQuery = removeDiacritics(query).toLowerCase();
       final List<DictItem> results = [];
 
+      final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
+
       for (var item in _cachedInesData!) {
         final String? palavra = item['palavra'];
         final String? descricao = item['descricao'];
@@ -120,7 +122,6 @@ class ApiService {
         final normalizedDescricao = descricao != null ? removeDiacritics(descricao).toLowerCase() : '';
 
         // Check if the query is present anywhere in the word or description
-        final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
         if (wordBound.hasMatch(normalizedPalavra) || wordBound.hasMatch(normalizedDescricao)) {
           final String? videoFilename = item['video'];
           String? videoUrl;
