@@ -42,6 +42,7 @@ class ApiService {
     final response = await http.get(url);
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
+      final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
       final filteredData = data.where((item) {
         final title = item['title']['rendered'] as String?;
         final content = item['content']['rendered'] as String?;
@@ -49,9 +50,12 @@ class ApiService {
         final normalizedTitle = title != null ? removeDiacritics(title).toLowerCase() : '';
         final normalizedContent = content != null ? removeDiacritics(content).toLowerCase() : '';
 
-        final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
         return wordBound.hasMatch(normalizedTitle) || wordBound.hasMatch(normalizedContent);
       }).toList();
+
+      final RegExp exp = RegExp(r'src="https:\/\/www\.youtube\.com\/embed\/([^"?]+)');
+      final RegExp expText = RegExp(r'https:\/\/www\.youtube\.com\/watch\?v=([^"&\s]+)');
+
       return filteredData.map((item) {
         final title = item['title']['rendered'];
         final content = item['content']['rendered'];
@@ -59,7 +63,6 @@ class ApiService {
 
         // Extract YouTube URL from iframe inside content
         String? youtubeId;
-        final RegExp exp = RegExp(r'src="https:\/\/www\.youtube\.com\/embed\/([^"?]+)');
         final match = exp.firstMatch(content);
         if (match != null) {
           youtubeId = match.group(1);
@@ -67,7 +70,6 @@ class ApiService {
 
         // Sometimes the URL is plain text
         if (youtubeId == null) {
-          final RegExp expText = RegExp(r'https:\/\/www\.youtube\.com\/watch\?v=([^"&\s]+)');
           final matchText = expText.firstMatch(content);
           if (matchText != null) {
             youtubeId = matchText.group(1);
@@ -160,6 +162,7 @@ class ApiService {
       final matches = itemExp.allMatches(response.body);
 
       final List<Future<DictItem?>> detailFutures = [];
+      final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
 
       for (final match in matches) {
         final link = match.group(1);
@@ -168,7 +171,6 @@ class ApiService {
         if (title != null && link != null) {
           // Exact match validation
           final normalizedTitle = removeDiacritics(title).toLowerCase();
-          final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
           if (wordBound.hasMatch(normalizedTitle)) {
              detailFutures.add(_fetchUFVDetail(link, title));
           }
@@ -220,6 +222,15 @@ class ApiService {
       final List<dynamic> data = json.decode(response.body);
       final List<DictItem> results = [];
 
+      final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
+      final RegExp videoExp = RegExp(r'<video[^>]+src=["' + "'" + r']([^"' + "'" + r']+)["' + "'" + r']');
+      final RegExp ytExp = RegExp(r'src=["' + "'" + r']https:\/\/www\.youtube\.com\/embed\/([^"' + "'" + r'?]+)');
+      final RegExp ytTextExp = RegExp(r'https:\/\/www\.youtube\.com\/watch\?v=([^"&\s]+)');
+      final RegExp ytShortExp = RegExp(r'https:\/\/youtu\.be\/([^"&\s<]+)');
+      final RegExp pbVideo = RegExp(r'src=["' + "'" + r'](http[^"' + "'" + r']+?\.mp4)["' + "'" + r']');
+      final RegExp pbYoutube = RegExp(r'src=["' + "'" + r'](https:\/\/www\.youtube\.com\/watch\?v=[^"&]+)["' + "'" + r']');
+      final RegExp pbExt = RegExp(r'watch\?v=([^"&\s]+)');
+
       for (final item in data) {
         final title = item['title']?['rendered'] as String?;
         final content = item['content']?['rendered'] as String?;
@@ -228,20 +239,16 @@ class ApiService {
           final normalizedTitle = removeDiacritics(title).toLowerCase();
           final normalizedContent = removeDiacritics(content).toLowerCase();
 
-          final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
-
           if (wordBound.hasMatch(normalizedTitle) || wordBound.hasMatch(normalizedContent)) {
             String? videoUrl;
             String? youtubeId;
 
-            final RegExp videoExp = RegExp(r'<video[^>]+src=["' + "'" + r']([^"' + "'" + r']+)["' + "'" + r']');
             final videoMatch = videoExp.firstMatch(content);
             if (videoMatch != null) {
               videoUrl = videoMatch.group(1);
             }
 
             if (videoUrl == null) {
-              final RegExp ytExp = RegExp(r'src=["' + "'" + r']https:\/\/www\.youtube\.com\/embed\/([^"' + "'" + r'?]+)');
               final ytMatch = ytExp.firstMatch(content);
               if (ytMatch != null) {
                 youtubeId = ytMatch.group(1);
@@ -249,7 +256,6 @@ class ApiService {
             }
 
             if (videoUrl == null && youtubeId == null) {
-              final RegExp ytTextExp = RegExp(r'https:\/\/www\.youtube\.com\/watch\?v=([^"&\s]+)');
               final ytTextMatch = ytTextExp.firstMatch(content);
               if (ytTextMatch != null) {
                 youtubeId = ytTextMatch.group(1);
@@ -257,7 +263,6 @@ class ApiService {
             }
 
             if (videoUrl == null && youtubeId == null) {
-              final RegExp ytShortExp = RegExp(r'https:\/\/youtu\.be\/([^"&\s<]+)');
               final ytShortMatch = ytShortExp.firstMatch(content);
               if (ytShortMatch != null) {
                 youtubeId = ytShortMatch.group(1);
@@ -265,7 +270,6 @@ class ApiService {
             }
 
             if (videoUrl == null && youtubeId == null) {
-               final RegExp pbVideo = RegExp(r'src=["' + "'" + r'](http[^"' + "'" + r']+?\.mp4)["' + "'" + r']');
                final pbMatch = pbVideo.firstMatch(content);
                if (pbMatch != null) {
                   videoUrl = pbMatch.group(1);
@@ -273,11 +277,9 @@ class ApiService {
             }
 
             if (videoUrl == null && youtubeId == null) {
-               final RegExp pbYoutube = RegExp(r'src=["' + "'" + r'](https:\/\/www\.youtube\.com\/watch\?v=[^"&]+)["' + "'" + r']');
                final pbYtMatch = pbYoutube.firstMatch(content);
                if (pbYtMatch != null) {
                   final String ytSrc = pbYtMatch.group(1)!;
-                  final RegExp pbExt = RegExp(r'watch\?v=([^"&\s]+)');
                   final extMatch = pbExt.firstMatch(ytSrc);
                   if (extMatch != null) {
                      youtubeId = extMatch.group(1);
@@ -311,6 +313,7 @@ class ApiService {
       final body = response.body;
       final List<DictItem> results = [];
 
+      final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
       final RegExp videoExp = RegExp(r'<video[^>]*src=["' + "'" + r'](https:\/\/media\.spreadthesign\.com\/video\/mp4\/[^"' + "'" + r']+)["' + "'" + r']');
       final videoMatch = videoExp.firstMatch(body);
 
@@ -324,7 +327,6 @@ class ApiService {
            final title = titleMatch.group(1)?.trim();
            if (title != null) {
               final normalizedTitle = removeDiacritics(title).toLowerCase();
-              final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
               if (wordBound.hasMatch(normalizedTitle)) {
                  results.add(DictItem(
                    title: title,
@@ -347,7 +349,6 @@ class ApiService {
 
          if (link != null && title != null) {
             final normalizedTitle = removeDiacritics(title).toLowerCase();
-            final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
             if (wordBound.hasMatch(normalizedTitle)) {
                detailFutures.add(_fetchSpreadTheSignDetail('https://www.spreadthesign.com' + link, title));
             }
