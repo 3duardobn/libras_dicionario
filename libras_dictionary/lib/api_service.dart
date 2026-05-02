@@ -212,6 +212,65 @@ class ApiService {
     return null;
   }
 
+  ({String? videoUrl, String? youtubeId}) _extractVideoAndYoutubeId(String content) {
+    String? videoUrl;
+    String? youtubeId;
+
+    final RegExp videoExp = RegExp(r'<video[^>]+src=["' + "'" + r']([^"' + "'" + r']+)["' + "'" + r']');
+    final videoMatch = videoExp.firstMatch(content);
+    if (videoMatch != null) {
+      videoUrl = videoMatch.group(1);
+    }
+
+    if (videoUrl == null) {
+      final RegExp ytExp = RegExp(r'src=["' + "'" + r']https:\/\/www\.youtube\.com\/embed\/([^"' + "'" + r'?]+)');
+      final ytMatch = ytExp.firstMatch(content);
+      if (ytMatch != null) {
+        youtubeId = ytMatch.group(1);
+        return (videoUrl: videoUrl, youtubeId: youtubeId);
+      }
+    } else {
+      return (videoUrl: videoUrl, youtubeId: youtubeId);
+    }
+
+    final RegExp ytTextExp = RegExp(r'https:\/\/www\.youtube\.com\/watch\?v=([^"&\s]+)');
+    final ytTextMatch = ytTextExp.firstMatch(content);
+    if (ytTextMatch != null) {
+      youtubeId = ytTextMatch.group(1);
+      return (videoUrl: videoUrl, youtubeId: youtubeId);
+    }
+
+    final RegExp ytShortExp = RegExp(r'https:\/\/youtu\.be\/([^"&\s<]+)');
+    final ytShortMatch = ytShortExp.firstMatch(content);
+    if (ytShortMatch != null) {
+      youtubeId = ytShortMatch.group(1);
+      return (videoUrl: videoUrl, youtubeId: youtubeId);
+    }
+
+    if (videoUrl == null) {
+      final RegExp pbVideo = RegExp(r'src=["' + "'" + r'](http[^"' + "'" + r']+?\.mp4)["' + "'" + r']');
+      final pbMatch = pbVideo.firstMatch(content);
+      if (pbMatch != null) {
+        videoUrl = pbMatch.group(1);
+        return (videoUrl: videoUrl, youtubeId: youtubeId);
+      }
+    }
+
+    final RegExp pbYoutube = RegExp(r'src=["' + "'" + r'](https:\/\/www\.youtube\.com\/watch\?v=[^"&]+)["' + "'" + r']');
+    final pbYtMatch = pbYoutube.firstMatch(content);
+    if (pbYtMatch != null) {
+      final String ytSrc = pbYtMatch.group(1)!;
+      final RegExp pbExt = RegExp(r'watch\?v=([^"&\s]+)');
+      final extMatch = pbExt.firstMatch(ytSrc);
+      if (extMatch != null) {
+        youtubeId = extMatch.group(1);
+        return (videoUrl: videoUrl, youtubeId: youtubeId);
+      }
+    }
+
+    return (videoUrl: videoUrl, youtubeId: youtubeId);
+  }
+
   Future<List<DictItem>> _fetchLibrasAcademicaUFF(String query) async {
     final normalizedQuery = removeDiacritics(query).toLowerCase();
     final url = Uri.parse('https://librasacademica.uff.br/wp-json/wp/v2/posts?search=' + Uri.encodeQueryComponent(query));
@@ -230,66 +289,13 @@ class ApiService {
           final normalizedContent = removeDiacritics(content).toLowerCase();
 
           if (wordBound.hasMatch(normalizedTitle) || wordBound.hasMatch(normalizedContent)) {
-            String? videoUrl;
-            String? youtubeId;
-
-            final RegExp videoExp = RegExp(r'<video[^>]+src=["' + "'" + r']([^"' + "'" + r']+)["' + "'" + r']');
-            final videoMatch = videoExp.firstMatch(content);
-            if (videoMatch != null) {
-              videoUrl = videoMatch.group(1);
-            }
-
-            if (videoUrl == null) {
-              final RegExp ytExp = RegExp(r'src=["' + "'" + r']https:\/\/www\.youtube\.com\/embed\/([^"' + "'" + r'?]+)');
-              final ytMatch = ytExp.firstMatch(content);
-              if (ytMatch != null) {
-                youtubeId = ytMatch.group(1);
-              }
-            }
-
-            if (videoUrl == null && youtubeId == null) {
-              final RegExp ytTextExp = RegExp(r'https:\/\/www\.youtube\.com\/watch\?v=([^"&\s]+)');
-              final ytTextMatch = ytTextExp.firstMatch(content);
-              if (ytTextMatch != null) {
-                youtubeId = ytTextMatch.group(1);
-              }
-            }
-
-            if (videoUrl == null && youtubeId == null) {
-              final RegExp ytShortExp = RegExp(r'https:\/\/youtu\.be\/([^"&\s<]+)');
-              final ytShortMatch = ytShortExp.firstMatch(content);
-              if (ytShortMatch != null) {
-                youtubeId = ytShortMatch.group(1);
-              }
-            }
-
-            if (videoUrl == null && youtubeId == null) {
-               final RegExp pbVideo = RegExp(r'src=["' + "'" + r'](http[^"' + "'" + r']+?\.mp4)["' + "'" + r']');
-               final pbMatch = pbVideo.firstMatch(content);
-               if (pbMatch != null) {
-                  videoUrl = pbMatch.group(1);
-               }
-            }
-
-            if (videoUrl == null && youtubeId == null) {
-               final RegExp pbYoutube = RegExp(r'src=["' + "'" + r'](https:\/\/www\.youtube\.com\/watch\?v=[^"&]+)["' + "'" + r']');
-               final pbYtMatch = pbYoutube.firstMatch(content);
-               if (pbYtMatch != null) {
-                  final String ytSrc = pbYtMatch.group(1)!;
-                  final RegExp pbExt = RegExp(r'watch\?v=([^"&\s]+)');
-                  final extMatch = pbExt.firstMatch(ytSrc);
-                  if (extMatch != null) {
-                     youtubeId = extMatch.group(1);
-                  }
-               }
-            }
-
+            final extraction = _extractVideoAndYoutubeId(content);
 
             results.add(DictItem(
               title: title,
               description: item['excerpt']?['rendered'] ?? '',
-              videoUrl: videoUrl,
-              youtubeId: youtubeId,
+              videoUrl: extraction.videoUrl,
+              youtubeId: extraction.youtubeId,
               source: 'LibrasAcademicaUFF',
             ));
           }
