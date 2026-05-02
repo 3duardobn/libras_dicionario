@@ -57,6 +57,7 @@ class ApiService {
     final response = await http.get(url);
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
+      final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
       final filteredData = data.where((item) {
         final title = item['title']['rendered'] as String?;
         final content = item['content']['rendered'] as String?;
@@ -64,7 +65,6 @@ class ApiService {
         final normalizedTitle = title != null ? removeDiacritics(title).toLowerCase() : '';
         final normalizedContent = content != null ? removeDiacritics(content).toLowerCase() : '';
 
-        final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
         return wordBound.hasMatch(normalizedTitle) || wordBound.hasMatch(normalizedContent);
       }).toList();
       return filteredData.map((item) {
@@ -126,6 +126,7 @@ class ApiService {
     if (_cachedInesData != null) {
       final String normalizedQuery = removeDiacritics(query).toLowerCase();
       final List<DictItem> results = [];
+      final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
 
       for (var item in _cachedInesData!) {
         final String? palavra = item['palavra'];
@@ -135,7 +136,6 @@ class ApiService {
         final normalizedDescricao = descricao != null ? removeDiacritics(descricao).toLowerCase() : '';
 
         // Check if the query is present anywhere in the word or description
-        final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
         if (wordBound.hasMatch(normalizedPalavra) || wordBound.hasMatch(normalizedDescricao)) {
           final String? videoFilename = item['video'];
           String? videoUrl;
@@ -175,6 +175,7 @@ class ApiService {
       final matches = itemExp.allMatches(response.body);
 
       final List<Future<DictItem?>> detailFutures = [];
+      final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
 
       for (final match in matches) {
         final link = match.group(1);
@@ -183,7 +184,6 @@ class ApiService {
         if (title != null && link != null) {
           // Exact match validation
           final normalizedTitle = removeDiacritics(title).toLowerCase();
-          final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
           if (wordBound.hasMatch(normalizedTitle)) {
              detailFutures.add(_fetchUFVDetail(link, title));
           }
@@ -234,6 +234,7 @@ class ApiService {
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
       final List<DictItem> results = [];
+      final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
 
       for (final item in data) {
         final title = item['title']?['rendered'] as String?;
@@ -242,8 +243,6 @@ class ApiService {
         if (title != null && content != null) {
           final normalizedTitle = removeDiacritics(title).toLowerCase();
           final normalizedContent = removeDiacritics(content).toLowerCase();
-
-          final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
 
           if (wordBound.hasMatch(normalizedTitle) || wordBound.hasMatch(normalizedContent)) {
             String? videoUrl;
@@ -325,6 +324,7 @@ class ApiService {
     if (response.statusCode == 200) {
       final body = response.body;
       final List<DictItem> results = [];
+      final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
 
       final RegExp videoExp = RegExp(r'<video[^>]*src=["' + "'" + r'](https:\/\/media\.spreadthesign\.com\/video\/mp4\/[^"' + "'" + r']+)["' + "'" + r']');
       final videoMatch = videoExp.firstMatch(body);
@@ -339,7 +339,6 @@ class ApiService {
            final title = titleMatch.group(1)?.trim();
            if (title != null) {
               final normalizedTitle = removeDiacritics(title).toLowerCase();
-              final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
               if (wordBound.hasMatch(normalizedTitle)) {
                  results.add(DictItem(
                    title: title,
@@ -362,7 +361,6 @@ class ApiService {
 
          if (link != null && title != null) {
             final normalizedTitle = removeDiacritics(title).toLowerCase();
-            final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
             if (wordBound.hasMatch(normalizedTitle)) {
                detailFutures.add(_fetchSpreadTheSignDetail('https://www.spreadthesign.com' + link, title));
             }
