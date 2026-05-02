@@ -113,6 +113,8 @@ class ApiService {
       final List<DictItem> results = [];
       final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
 
+      final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
+
       for (var item in _cachedInesData!) {
         final String? palavra = item['palavra'];
         final String? descricao = item['descricao'];
