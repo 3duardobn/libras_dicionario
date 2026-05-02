@@ -52,6 +52,7 @@ class ApiService {
   Future<List<DictItem>> _fetchRedeSurdos(String query) async {
     final encodedQuery = Uri.encodeQueryComponent(query);
     final normalizedQuery = removeDiacritics(query).toLowerCase();
+    final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
 
     final url = Uri.parse('https://redesurdosce.ufc.br/wp-json/wp/v2/posts?search=$encodedQuery');
     final response = await http.get(url);
@@ -64,7 +65,6 @@ class ApiService {
         final normalizedTitle = title != null ? removeDiacritics(title).toLowerCase() : '';
         final normalizedContent = content != null ? removeDiacritics(content).toLowerCase() : '';
 
-        final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
         return wordBound.hasMatch(normalizedTitle) || wordBound.hasMatch(normalizedContent);
       }).toList();
       return filteredData.map((item) {
@@ -125,6 +125,7 @@ class ApiService {
 
     if (_cachedInesData != null) {
       final String normalizedQuery = removeDiacritics(query).toLowerCase();
+      final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
       final List<DictItem> results = [];
 
       for (var item in _cachedInesData!) {
@@ -135,7 +136,6 @@ class ApiService {
         final normalizedDescricao = descricao != null ? removeDiacritics(descricao).toLowerCase() : '';
 
         // Check if the query is present anywhere in the word or description
-        final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
         if (wordBound.hasMatch(normalizedPalavra) || wordBound.hasMatch(normalizedDescricao)) {
           final String? videoFilename = item['video'];
           String? videoUrl;
@@ -167,6 +167,7 @@ class ApiService {
   }
   Future<List<DictItem>> _fetchUFV(String query) async {
     final normalizedQuery = removeDiacritics(query).toLowerCase();
+    final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
     final url = Uri.parse('https://sistemas.cead.ufv.br/capes/dicionario/?s=' + Uri.encodeQueryComponent(query));
     final response = await http.get(url);
     if (response.statusCode == 200) {
@@ -183,7 +184,6 @@ class ApiService {
         if (title != null && link != null) {
           // Exact match validation
           final normalizedTitle = removeDiacritics(title).toLowerCase();
-          final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
           if (wordBound.hasMatch(normalizedTitle)) {
              detailFutures.add(_fetchUFVDetail(link, title));
           }
@@ -229,6 +229,7 @@ class ApiService {
 
   Future<List<DictItem>> _fetchLibrasAcademicaUFF(String query) async {
     final normalizedQuery = removeDiacritics(query).toLowerCase();
+    final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
     final url = Uri.parse('https://librasacademica.uff.br/wp-json/wp/v2/posts?search=' + Uri.encodeQueryComponent(query));
     final response = await http.get(url);
     if (response.statusCode == 200) {
@@ -242,8 +243,6 @@ class ApiService {
         if (title != null && content != null) {
           final normalizedTitle = removeDiacritics(title).toLowerCase();
           final normalizedContent = removeDiacritics(content).toLowerCase();
-
-          final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
 
           if (wordBound.hasMatch(normalizedTitle) || wordBound.hasMatch(normalizedContent)) {
             String? videoUrl;
@@ -318,6 +317,7 @@ class ApiService {
 
   Future<List<DictItem>> _fetchSpreadTheSign(String query) async {
     final normalizedQuery = removeDiacritics(query).toLowerCase();
+    final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
     final url = Uri.parse('https://www.spreadthesign.com/pt.br/search/?q=' + Uri.encodeQueryComponent(query));
     final response = await http.get(url, headers: {
        'User-Agent': 'Mozilla/5.0'
@@ -339,7 +339,6 @@ class ApiService {
            final title = titleMatch.group(1)?.trim();
            if (title != null) {
               final normalizedTitle = removeDiacritics(title).toLowerCase();
-              final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
               if (wordBound.hasMatch(normalizedTitle)) {
                  results.add(DictItem(
                    title: title,
@@ -362,7 +361,6 @@ class ApiService {
 
          if (link != null && title != null) {
             final normalizedTitle = removeDiacritics(title).toLowerCase();
-            final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
             if (wordBound.hasMatch(normalizedTitle)) {
                detailFutures.add(_fetchSpreadTheSignDetail('https://www.spreadthesign.com' + link, title));
             }
