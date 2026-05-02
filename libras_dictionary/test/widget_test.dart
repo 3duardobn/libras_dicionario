@@ -4,6 +4,8 @@ import 'package:libras_dictionary/main.dart';
 void main() {
   testWidgets('Test pump widget', (WidgetTester tester) async {
     await tester.pumpWidget(const LibrasDictionaryApp());
+    // Pump and settle to let the splash screen timer finish
+    await tester.pumpAndSettle(const Duration(seconds: 4));
     expect(find.text('Dicionário Libras'), findsWidgets);
   });
 }
