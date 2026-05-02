@@ -207,7 +207,7 @@ class ApiService {
         }
       }
     } catch (e) {
-      // Ignored
+      print('Error fetching UFV detail: $e');
     }
     return null;
   }
@@ -390,7 +390,9 @@ class ApiService {
               );
            }
         }
-     } catch(e) {}
+     } catch (e) {
+        print('Error fetching SpreadTheSign detail: $e');
+     }
      return null;
   }
 }
