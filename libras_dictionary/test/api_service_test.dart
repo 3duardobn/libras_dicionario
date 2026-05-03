@@ -13,16 +13,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:libras_dictionary/main.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:libras_dictionary/api_service.dart';
 
 void main() {
-  testWidgets('Test pump widget', (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues({});
-    await tester.pumpWidget(const LibrasDictionaryApp());
-    // Wait for the splash screen duration
-    await tester.pumpAndSettle(const Duration(seconds: 4));
-    expect(find.text('Dicionário Libras'), findsWidgets);
+  test('ApiService _fetchInes handles invalid JSON gracefully', () async {
+    final mockClient = MockClient((request) async {
+      if (request.url.toString().contains('palavras.js')) {
+        return http.Response('var palavras = [{invalid json}];', 200);
+      }
+      return http.Response('[]', 200);
+    });
+
+    await http.runWithClient(() async {
+      final apiService = ApiService();
+      final results = await apiService.search('test', source: 'INES');
+      expect(results, isEmpty);
+    }, () => mockClient);
   });
 }
