@@ -7,5 +7,6 @@ void main() {
     // Use pumpAndSettle to wait for the Future.delayed in the splash screen to finish
     await tester.pumpAndSettle(const Duration(seconds: 4));
     expect(find.text('Dicionário Libras'), findsWidgets);
+    await tester.pumpAndSettle(const Duration(seconds: 3)); // Consume splash screen timer
   });
 }
