@@ -7,5 +7,6 @@ void main() {
     // Wait for the splash screen timer (3 seconds)
     await tester.pumpAndSettle(const Duration(seconds: 4));
     expect(find.text('Dicionário Libras'), findsWidgets);
+    await tester.pumpAndSettle(const Duration(seconds: 3)); // Consume splash screen timer
   });
 }
