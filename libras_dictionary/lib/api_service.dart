@@ -19,7 +19,10 @@ import 'package:diacritic/diacritic.dart';
 import 'models.dart';
 
 class ApiService {
+  final http.Client _client;
   List<dynamic>? _cachedInesData;
+
+  ApiService({http.Client? client}) : _client = client ?? http.Client();
 
   Future<List<DictItem>> search(String query, {String source = 'Ambos'}) async {
     final List<Future<List<DictItem>>> futures = [];
@@ -54,7 +57,7 @@ class ApiService {
     final normalizedQuery = removeDiacritics(query).toLowerCase();
 
     final url = Uri.parse('https://redesurdosce.ufc.br/wp-json/wp/v2/posts?search=$encodedQuery');
-    final response = await http.get(url);
+    final response = await _client.get(url);
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
       final RegExp wordBound = RegExp(r'\b' + RegExp.escape(normalizedQuery) + r'\b', unicode: true);
@@ -103,7 +106,7 @@ class ApiService {
   Future<List<DictItem>> _fetchInes(String query) async {
     if (_cachedInesData == null) {
       final url = Uri.parse('https://dicionario.ines.gov.br/public/site/js/palavras.js');
-      final response = await http.get(url);
+      final response = await _client.get(url);
       if (response.statusCode == 200) {
         final String body = response.body;
 
@@ -170,7 +173,7 @@ class ApiService {
   Future<List<DictItem>> _fetchUFV(String query) async {
     final normalizedQuery = removeDiacritics(query).toLowerCase();
     final url = Uri.parse('https://sistemas.cead.ufv.br/capes/dicionario/?s=' + Uri.encodeQueryComponent(query));
-    final response = await http.get(url);
+    final response = await _client.get(url);
     if (response.statusCode == 200) {
       final List<DictItem> results = [];
       final RegExp itemExp = RegExp(r'<a href="([^"]+)">(?:\s*)<h4>([^<]+)</h4>');
@@ -207,7 +210,7 @@ class ApiService {
   Future<DictItem?> _fetchUFVDetail(String urlStr, String title) async {
     try {
       final url = Uri.parse(urlStr);
-      final response = await http.get(url);
+      final response = await _client.get(url);
       if (response.statusCode == 200) {
         final body = response.body;
         final RegExp videoExp = RegExp(r'<video[^>]+src=["' + "'" + r']([^"' + "'" + r']+)["' + "'" + r']');
@@ -291,7 +294,7 @@ class ApiService {
   Future<List<DictItem>> _fetchLibrasAcademicaUFF(String query) async {
     final normalizedQuery = removeDiacritics(query).toLowerCase();
     final url = Uri.parse('https://librasacademica.uff.br/wp-json/wp/v2/posts?search=' + Uri.encodeQueryComponent(query));
-    final response = await http.get(url);
+    final response = await _client.get(url);
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
       final List<DictItem> results = [];
@@ -326,7 +329,7 @@ class ApiService {
   Future<List<DictItem>> _fetchSpreadTheSign(String query) async {
     final normalizedQuery = removeDiacritics(query).toLowerCase();
     final url = Uri.parse('https://www.spreadthesign.com/pt.br/search/?q=' + Uri.encodeQueryComponent(query));
-    final response = await http.get(url, headers: {
+    final response = await _client.get(url, headers: {
        'User-Agent': 'Mozilla/5.0'
     });
     if (response.statusCode == 200) {
@@ -392,7 +395,7 @@ class ApiService {
   Future<DictItem?> _fetchSpreadTheSignDetail(String urlStr, String title) async {
      try {
         final url = Uri.parse(urlStr);
-        final response = await http.get(url, headers: {
+        final response = await _client.get(url, headers: {
            'User-Agent': 'Mozilla/5.0'
         });
         if (response.statusCode == 200) {
