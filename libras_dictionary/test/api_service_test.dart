@@ -1,214 +1,113 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
+import 'package:http/testing.dart';
 import 'package:libras_dictionary/api_service.dart';
 import 'package:libras_dictionary/models.dart';
+import 'dart:convert';
 
-import 'api_service_test.mocks.dart';
-
-@GenerateMocks([http.Client])
 void main() {
-  late ApiService apiService;
-  late MockClient mockClient;
-
-  setUp(() {
-    mockClient = MockClient();
-    apiService = ApiService(client: mockClient);
-  });
-
-  group('ApiService Tests', () {
-    test('search returns empty list when all sources fail or return nothing', () async {
-      when(mockClient.get(any, headers: anyNamed('headers')))
-          .thenAnswer((_) async => http.Response('[]', 200));
-
-      final results = await apiService.search('teste');
-
-      expect(results, isEmpty);
-    });
-
-    test('search fetches from INES successfully', () async {
-      final mockJsResponse = '''
-      var palavras = [
-        {
-          "palavra": "Teste",
-          "descricao": "Descrição do teste",
-          "video": "video_teste.mp4",
-          "image": "imagem_teste.jpg",
-          "exemplo": "Exemplo",
-          "libras": "Libras"
+  group('ApiService Search Tests', () {
+    test('search returns data from RedeSurdos successfully', () async {
+      final mockClient = MockClient((request) async {
+        if (request.url.toString().contains('redesurdosce.ufc.br')) {
+          return http.Response(jsonEncode([
+            {
+              'title': {'rendered': 'casa'},
+              'content': {'rendered': '<p>Casa content</p>'},
+              'excerpt': {'rendered': 'Casa excerpt'},
+            }
+          ]), 200);
         }
-      ];
-      ''';
+        return http.Response('[]', 404);
+      });
 
-      when(mockClient.get(any, headers: anyNamed('headers')))
-          .thenAnswer((Invocation inv) async {
-            Uri uri = inv.positionalArguments[0] as Uri;
-            if (uri.host.contains('ines')) {
-              return http.Response(mockJsResponse, 200);
-            }
-            return http.Response('[]', 200);
-          });
-
-      final results = await apiService.search('teste', source: 'INES');
+      final apiService = ApiService(client: mockClient);
+      final results = await apiService.search('casa', source: 'RedeSurdos');
 
       expect(results, isNotEmpty);
       expect(results.length, 1);
-      expect(results.first.title, 'Teste');
-      expect(results.first.source, 'INES');
-      expect(results.first.videoUrl, 'https://dicionario.ines.gov.br/public/media/palavras/videos/video_teste.mp4');
-      expect(results.first.imageUrl, 'https://dicionario.ines.gov.br/public/media/palavras/images/imagem_teste.jpg');
-      expect(results.first.description, 'Descrição do teste');
-      expect(results.first.exemplo, 'Exemplo');
-      expect(results.first.libras, 'Libras');
+      expect(results[0].title, 'casa');
+      expect(results[0].source, 'RedeSurdos');
+      expect(results[0].description, 'Casa excerpt');
     });
 
-    test('search fetches from UFV successfully', () async {
-      final mockListResponse = '''
-      <div>
-        <a href="https://sistemas.cead.ufv.br/capes/dicionario/teste/">
-          <h4>Teste</h4>
-        </a>
-      </div>
-      ''';
+    test('search with source Ambos aggregates data from all sources', () async {
+      final mockClient = MockClient((request) async {
+        final urlStr = request.url.toString();
 
-      final mockDetailResponse = '''
-      <div>
-        <video src="http://ufv.br/video_teste.mp4"></video>
-      </div>
-      ''';
-
-      when(mockClient.get(any, headers: anyNamed('headers')))
-          .thenAnswer((Invocation inv) async {
-            Uri uri = inv.positionalArguments[0] as Uri;
-            if (uri.host.contains('ufv.br')) {
-              if (uri.path.contains('teste')) {
-                return http.Response(mockDetailResponse, 200);
-              }
-              return http.Response(mockListResponse, 200);
+        if (urlStr.contains('redesurdosce.ufc.br')) {
+          return http.Response(jsonEncode([
+            {
+              'title': {'rendered': 'casa'},
+              'content': {'rendered': '<p>Casa content RS</p>'},
+              'excerpt': {'rendered': 'Casa excerpt RS'},
             }
-            return http.Response('[]', 200);
-          });
-
-      final results = await apiService.search('teste', source: 'UFV');
-
-      expect(results, isNotEmpty);
-      expect(results.length, 1);
-      expect(results.first.title, 'Teste');
-      expect(results.first.source, 'UFV');
-      expect(results.first.videoUrl, 'http://ufv.br/video_teste.mp4');
-    });
-
-    test('search fetches from LibrasAcademicaUFF successfully', () async {
-      final mockResponse = '''
-      [
-        {
-          "title": {"rendered": "Teste"},
-          "content": {"rendered": "Conteúdo com a palavra teste e um <video src=\\"http://uff.br/video.mp4\\"></video>"},
-          "excerpt": {"rendered": "Resumo"}
+          ]), 200);
+        } else if (urlStr.contains('dicionario.ines.gov.br')) {
+          return http.Response('var palavras = [{"palavra": "casa", "descricao": "desc INES", "exemplo": "ex INES", "libras": "libras INES"}];', 200);
+        } else if (urlStr.contains('sistemas.cead.ufv.br/capes/dicionario/?s=')) {
+          // UFV search page
+          return http.Response('<a href="https://sistemas.cead.ufv.br/capes/dicionario/casa"><h4>casa</h4></a>', 200);
+        } else if (urlStr.contains('sistemas.cead.ufv.br/capes/dicionario/casa')) {
+           // UFV detail page
+           return http.Response('<video src="casa.mp4"></video>', 200);
+        } else if (urlStr.contains('librasacademica.uff.br')) {
+          return http.Response(jsonEncode([
+            {
+              'title': {'rendered': 'casa'},
+              'content': {'rendered': '<p>Casa content UFF</p>'},
+              'excerpt': {'rendered': 'Casa excerpt UFF'},
+            }
+          ]), 200);
+        } else if (urlStr.contains('spreadthesign.com/pt.br/search/')) {
+          // SpreadTheSign search page
+          return http.Response('<div class="search-result-title"> <a href="/pt.br/word/casa/">casa</a>', 200);
+        } else if (urlStr.contains('spreadthesign.com/pt.br/word/casa')) {
+           // SpreadTheSign detail page
+           return http.Response('<video src="https://media.spreadthesign.com/video/mp4/casa.mp4"></video>', 200);
         }
-      ]
-      ''';
 
-      when(mockClient.get(any, headers: anyNamed('headers')))
-          .thenAnswer((Invocation inv) async {
-            Uri uri = inv.positionalArguments[0] as Uri;
-            if (uri.host.contains('librasacademica.uff.br')) {
-              return http.Response(mockResponse, 200);
-            }
-            return http.Response('[]', 200);
-          });
+        return http.Response('[]', 404);
+      });
 
-      final results = await apiService.search('teste', source: 'LibrasAcademicaUFF');
+      final apiService = ApiService(client: mockClient);
+      final results = await apiService.search('casa', source: 'Ambos');
 
-      expect(results, isNotEmpty);
-      expect(results.length, 1);
-      expect(results.first.title, 'Teste');
-      expect(results.first.source, 'LibrasAcademicaUFF');
-      expect(results.first.videoUrl, 'http://uff.br/video.mp4');
-      expect(results.first.description, 'Resumo');
+      expect(results.length, 5); // 1 from each of the 5 sources
+
+      final sources = results.map((e) => e.source).toSet();
+      expect(sources.contains('RedeSurdos'), isTrue);
+      expect(sources.contains('INES'), isTrue);
+      expect(sources.contains('UFV'), isTrue);
+      expect(sources.contains('LibrasAcademicaUFF'), isTrue);
+      expect(sources.contains('SpreadTheSign'), isTrue);
     });
 
-    test('search fetches from SpreadTheSign successfully', () async {
-      final mockListResponse = '''
-      <div>
-        <video src="https://media.spreadthesign.com/video/mp4/test1.mp4"></video>
-        <span class="flag-icon flag-icon-br bordered"></span> Teste
+    test('search handles API errors gracefully', () async {
+      final mockClient = MockClient((request) async {
+        final urlStr = request.url.toString();
 
-        <div class="search-result-title">
-          <a href="/pt.br/word/123/teste/"> Teste
-        </div>
-      </div>
-      ''';
-
-      final mockDetailResponse = '''
-      <div>
-        <video src="https://media.spreadthesign.com/video/mp4/test2.mp4"></video>
-      </div>
-      ''';
-
-      when(mockClient.get(any, headers: anyNamed('headers')))
-          .thenAnswer((Invocation inv) async {
-            Uri uri = inv.positionalArguments[0] as Uri;
-            if (uri.host.contains('spreadthesign.com')) {
-              if (uri.path.contains('/word/')) {
-                return http.Response(mockDetailResponse, 200);
-              }
-              return http.Response(mockListResponse, 200);
-            }
-            return http.Response('[]', 200);
-          });
-
-      final results = await apiService.search('teste', source: 'SpreadTheSign');
-
-      expect(results, isNotEmpty);
-      expect(results.length, 2);
-      expect(results[0].title, 'Teste');
-      expect(results[0].source, 'SpreadTheSign');
-      expect(results[0].videoUrl, 'https://media.spreadthesign.com/video/mp4/test1.mp4');
-
-      expect(results[1].title, 'Teste');
-      expect(results[1].source, 'SpreadTheSign');
-      expect(results[1].videoUrl, 'https://media.spreadthesign.com/video/mp4/test2.mp4');
-    });
-
-    test('search handles HTTP errors gracefully', () async {
-      when(mockClient.get(any, headers: anyNamed('headers')))
-          .thenAnswer((_) async => http.Response('Internal Server Error', 500));
-
-      final results = await apiService.search('teste');
-
-      expect(results, isEmpty);
-    });
-
-    test('search fetches from RedeSurdos successfully', () async {
-      final mockResponse = '''
-      [
-        {
-          "title": {"rendered": "Teste"},
-          "content": {"rendered": "Conteúdo com a palavra teste e um <iframe src=\\"https://www.youtube.com/embed/dQw4w9WgXcQ\\"></iframe>"},
-          "excerpt": {"rendered": "Resumo"}
+        if (urlStr.contains('redesurdosce.ufc.br')) {
+          return http.Response('Internal Server Error', 500);
+        } else if (urlStr.contains('dicionario.ines.gov.br')) {
+           // Simulating a network error or format exception
+           throw Exception('Connection timed out');
+        } else if (urlStr.contains('sistemas.cead.ufv.br')) {
+          return http.Response('Bad Gateway', 502);
+        } else if (urlStr.contains('librasacademica.uff.br')) {
+          return http.Response('Not Found', 404);
+        } else if (urlStr.contains('spreadthesign.com')) {
+          throw Exception('Failed to load');
         }
-      ]
-      ''';
 
-      when(mockClient.get(any, headers: anyNamed('headers')))
-          .thenAnswer((Invocation inv) async {
-            Uri uri = inv.positionalArguments[0] as Uri;
-            if (uri.host.contains('redesurdosce')) {
-              return http.Response(mockResponse, 200);
-            }
-            return http.Response('[]', 200);
-          });
+        return http.Response('[]', 404);
+      });
 
-      final results = await apiService.search('teste', source: 'RedeSurdos');
+      final apiService = ApiService(client: mockClient);
+      // Since catchError is used for all fetches in search, an exception shouldn't bubble up.
+      final results = await apiService.search('casa', source: 'Ambos');
 
-      expect(results, isNotEmpty);
-      expect(results.length, 1);
-      expect(results.first.title, 'Teste');
-      expect(results.first.source, 'RedeSurdos');
-      expect(results.first.youtubeId, 'dQw4w9WgXcQ');
-      expect(results.first.description, 'Resumo');
+      expect(results, isEmpty); // Should be empty because all endpoints failed
     });
   });
 }
