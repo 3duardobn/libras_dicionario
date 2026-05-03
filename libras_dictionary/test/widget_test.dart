@@ -6,9 +6,8 @@ void main() {
   testWidgets('Test pump widget', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const LibrasDictionaryApp());
-    // Wait for the splash screen timer (3 seconds)
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pumpAndSettle();
+    // Wait for the splash screen duration
+    await tester.pumpAndSettle(const Duration(seconds: 4));
     expect(find.text('Dicionário Libras'), findsWidgets);
   });
 }
