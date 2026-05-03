@@ -76,14 +76,12 @@ class ApiService {
         final content = item['content']['rendered'];
         final excerpt = item['excerpt']['rendered'];
 
-        // Extract YouTube URL from iframe inside content
         String? youtubeId;
         final match = exp.firstMatch(content);
         if (match != null) {
           youtubeId = match.group(1);
         }
 
-        // Sometimes the URL is plain text
         if (youtubeId == null) {
           final matchText = expText.firstMatch(content);
           if (matchText != null) {
@@ -144,7 +142,6 @@ class ApiService {
         final normalizedDescricao =
             descricao != null ? removeDiacritics(descricao).toLowerCase() : '';
 
-        // Check if the query is present anywhere in the word or description
         if (wordBound.hasMatch(normalizedPalavra) ||
             wordBound.hasMatch(normalizedDescricao)) {
           final String? videoFilename = item['video'];
@@ -191,9 +188,10 @@ class ApiService {
     final response = await client.get(url);
     if (response.statusCode == 200) {
       final List<DictItem> results = [];
-      final RegExp itemExp = RegExp(r'<a href="([^"]+)">(?:\s*)<h4>([^<]+)</h4>');
+      final RegExp itemExp = RegExp(
+        r'<a href="([^"]+)">(?:\s*)<h4>([^<]+)</h4>',
+      );
       final matches = itemExp.allMatches(response.body);
-
       final List<Future<DictItem?>> detailFutures = [];
 
       for (final match in matches) {
@@ -201,7 +199,6 @@ class ApiService {
         final title = match.group(2)?.trim();
 
         if (title != null && link != null) {
-          // Exact match validation
           final normalizedTitle = removeDiacritics(title).toLowerCase();
           if (wordBound.hasMatch(normalizedTitle)) {
             detailFutures.add(_fetchUFVDetail(link, title));
@@ -453,7 +450,8 @@ class ApiService {
       String urlStr, String title) async {
     try {
       final url = Uri.parse(urlStr);
-      final response = await client.get(url, headers: {'User-Agent': 'Mozilla/5.0'});
+      final response =
+          await client.get(url, headers: {'User-Agent': 'Mozilla/5.0'});
       if (response.statusCode == 200) {
         final body = response.body;
         final RegExp videoExp = RegExp(
