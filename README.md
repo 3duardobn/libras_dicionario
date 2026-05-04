@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🤲 Dicionário Integrado de Libras
+# Dicionário Integrado de Libras
 
 <img src="libras_dictionary/Brazilian_Sign_Language_Symbol.svg" alt="Símbolo da Língua Brasileira de Sinais" width="200" height="200">
 
