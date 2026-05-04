@@ -113,5 +113,9 @@ dart analyze
 
 Este projeto está licenciado sob a **GNU General Public License v3.0**. Veja o arquivo [`LICENSE`](LICENSE) para mais detalhes.
 
+### Atribuições
+
+- **Ícone de Libras:** O símbolo da Língua Brasileira de Sinais usado neste projeto está disponível sob a licença [Creative Commons CC0 1.0 Universal Public Domain Dedication](https://creativecommons.org/publicdomain/zero/1.0/). Fonte: [Wikimedia Commons](https://en.wikipedia.org/wiki/File:Brazilian_Sign_Language_Symbol.svg).
+
 ---
 *Desenvolvido com foco em acessibilidade e democratização do ensino de Libras.*
