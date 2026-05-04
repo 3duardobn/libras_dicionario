@@ -569,6 +569,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             'https://www.spreadthesign.com/',
             'SpreadTheSign é um dicionário internacional. Os direitos pertencem ao European Sign Language Centre.',
           ),
+          _buildSourceCredit(
+            'Ícone de Libras',
+            'Wikimedia Commons',
+            'https://en.wikipedia.org/wiki/File:Brazilian_Sign_Language_Symbol.svg',
+            'O símbolo da Língua Brasileira de Sinais usado neste projeto está disponível sob a licença Creative Commons CC0 1.0 Universal Public Domain Dedication.',
+          ),
           const Divider(),
           const ListTile(
             title: Text('Licença do Projeto', style: TextStyle(fontWeight: FontWeight.bold)),
