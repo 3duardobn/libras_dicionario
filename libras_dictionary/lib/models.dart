@@ -21,7 +21,8 @@ class DictItem {
   final String? videoUrl;
   final String? imageUrl;
   final String? youtubeId;
-  final String source; // 'INES' or 'RedeSurdos'
+  final String? link;
+  final String source; // 'INES', 'RedeSurdos', 'YouTube', etc.
 
   DictItem({
     required this.title,
@@ -31,6 +32,7 @@ class DictItem {
     this.videoUrl,
     this.imageUrl,
     this.youtubeId,
+    this.link,
     required this.source,
   });
 }

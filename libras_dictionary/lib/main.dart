@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
@@ -80,27 +81,51 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SvgPicture.asset(
-              'assets/icone_logo.svg',
-              width: 150,
-              height: 150,
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withOpacity(0.05) : Colors.blue.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: SvgPicture.asset(
+                'assets/icone_logo.svg',
+                width: 180,
+                fit: BoxFit.contain, // Garante que não estique
+                colorFilter: ColorFilter.mode(
+                  isDark ? Colors.white : Colors.blue.shade800,
+                  BlendMode.srcIn,
+                ),
+              ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             Text(
               'Dicionário Libras',
               style: TextStyle(
-                fontSize: 28,
+                fontSize: 32,
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
+                color: isDark ? Colors.white : Colors.blue.shade900,
+                letterSpacing: 1.2,
               ),
             ),
-            const SizedBox(height: 8),
-            const CircularProgressIndicator(),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: 40,
+              height: 40,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isDark ? Colors.white70 : Colors.blue.shade800,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -120,9 +145,11 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
   final TextEditingController _searchController = TextEditingController();
   List<DictItem> _allSearchResults = [];
   bool _isLoading = false;
-  String _selectedSource = 'Ambos';
+  bool _isYoutubeSearch = false;
+  List<String> _selectedSourcesList = ['Ambos'];
   String _lastSearchQuery = '';
   List<String> _enabledSources = ['INES', 'RedeSurdos', 'UFV', 'LibrasAcademicaUFF', 'SpreadTheSign'];
+  bool _autoYoutubeSearch = false;
 
   @override
   void initState() {
@@ -135,14 +162,16 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
     setState(() {
       _enabledSources = prefs.getStringList('enabled_sources') ?? 
           ['INES', 'RedeSurdos', 'UFV', 'LibrasAcademicaUFF', 'SpreadTheSign'];
+      _autoYoutubeSearch = prefs.getBool('auto_youtube_search') ?? false;
     });
   }
 
   List<DictItem> get _filteredResults {
-    if (_selectedSource == 'Ambos') {
+    if (_isYoutubeSearch) return _allSearchResults;
+    if (_selectedSourcesList.contains('Ambos')) {
       return _allSearchResults.where((item) => _enabledSources.contains(item.source)).toList();
     }
-    return _allSearchResults.where((item) => item.source == _selectedSource).toList();
+    return _allSearchResults.where((item) => _selectedSourcesList.contains(item.source)).toList();
   }
 
   void _performSearch() async {
@@ -151,14 +180,49 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
 
     setState(() {
       _isLoading = true;
+      _isYoutubeSearch = false;
       _allSearchResults = [];
       _lastSearchQuery = query;
     });
 
     final results = await _apiService.search(query, source: 'Ambos');
 
+    if (results.isEmpty && _autoYoutubeSearch) {
+      _performYoutubeSearch();
+      return;
+    }
+
     setState(() {
       _allSearchResults = results;
+      _isLoading = false;
+    });
+  }
+
+  void _performYoutubeSearch() async {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) return;
+
+    setState(() {
+      _isLoading = true;
+      _isYoutubeSearch = true;
+      _allSearchResults = [];
+      _lastSearchQuery = query;
+    });
+
+    final results = await _apiService.searchYouTube(query);
+
+    setState(() {
+      _allSearchResults = results;
+      _isLoading = false;
+    });
+  }
+
+  void _clearSearch() {
+    setState(() {
+      _searchController.clear();
+      _allSearchResults = [];
+      _lastSearchQuery = '';
+      _isYoutubeSearch = false;
       _isLoading = false;
     });
   }
@@ -179,15 +243,6 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
   Widget build(BuildContext context) {
     final displayResults = _filteredResults;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    final dropdownItems = [
-      const DropdownMenuItem(value: 'Ambos', child: Text('Todas as Fontes Ativas')),
-      if (_enabledSources.contains('INES')) const DropdownMenuItem(value: 'INES', child: Text('INES')),
-      if (_enabledSources.contains('RedeSurdos')) const DropdownMenuItem(value: 'RedeSurdos', child: Text('Rede Surdos')),
-      if (_enabledSources.contains('UFV')) const DropdownMenuItem(value: 'UFV', child: Text('UFV')),
-      if (_enabledSources.contains('LibrasAcademicaUFF')) const DropdownMenuItem(value: 'LibrasAcademicaUFF', child: Text('Libras Acadêmica UFF')),
-      if (_enabledSources.contains('SpreadTheSign')) const DropdownMenuItem(value: 'SpreadTheSign', child: Text('SpreadTheSign')),
-    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -210,6 +265,12 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _performYoutubeSearch,
+        backgroundColor: Colors.red,
+        child: const Icon(Icons.play_circle_filled, color: Colors.white, size: 36),
+        tooltip: 'Buscar no YouTube',
+      ),
       body: Column(
         children: [
           Padding(
@@ -219,10 +280,19 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
                 Expanded(
                   child: TextField(
                     controller: _searchController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Pesquisar palavra (Português)',
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: _clearSearch,
+                            )
+                          : null,
                     ),
+                    onChanged: (text) {
+                      setState(() {}); // Atualiza para mostrar/esconder o botão clear
+                    },
                     onSubmitted: (_) => _performSearch(),
                   ),
                 ),
@@ -234,26 +304,81 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: DropdownButton<String>(
-              value: dropdownItems.any((item) => item.value == _selectedSource) ? _selectedSource : 'Ambos',
-              isExpanded: true,
-              items: dropdownItems,
-              onChanged: (String? newValue) {
-                if (newValue != null) {
-                  setState(() {
-                    _selectedSource = newValue;
-                  });
-                }
-              },
+          if (!_isYoutubeSearch)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Wrap(
+                spacing: 8.0,
+                runSpacing: 4.0,
+                children: [
+                  FilterChip(
+                    label: const Text('Todos'),
+                    selected: _selectedSourcesList.contains('Ambos'),
+                    onSelected: (bool selected) {
+                      setState(() {
+                        if (selected) {
+                          // Se marcar "Todos", remove todo o resto
+                          _selectedSourcesList = ['Ambos'];
+                        } else {
+                          // Se desmarcar "Todos" e não tiver mais nada, mantém "Todos"
+                          if (_selectedSourcesList.length == 1 && _selectedSourcesList.contains('Ambos')) {
+                            // Não faz nada, mantém selecionado ou forçar? 
+                            // O comportamento padrão do FilterChip permite desmarcar.
+                            // Vamos garantir que sempre haja algo selecionado.
+                          }
+                        }
+                      });
+                    },
+                  ),
+                  ..._enabledSources.map((source) {
+                    final isSelected = _selectedSourcesList.contains(source);
+                    return FilterChip(
+                      label: Text(source),
+                      selected: isSelected,
+                      selectedColor: getSourceColor(source).withOpacity(0.3),
+                      checkmarkColor: getSourceColor(source),
+                      labelStyle: TextStyle(
+                        color: isSelected ? getSourceColor(source) : null,
+                        fontWeight: isSelected ? FontWeight.bold : null,
+                      ),
+                      onSelected: (bool selected) {
+                        setState(() {
+                          if (selected) {
+                            // Se marcar um específico, remove o "Todos"
+                            _selectedSourcesList.remove('Ambos');
+                            if (!_selectedSourcesList.contains(source)) {
+                              _selectedSourcesList.add(source);
+                            }
+                          } else {
+                            // Se desmarcar um específico
+                            _selectedSourcesList.remove(source);
+                            // Se ficar vazio, volta para "Todos"
+                            if (_selectedSourcesList.isEmpty) {
+                              _selectedSourcesList = ['Ambos'];
+                            }
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ],
+              ),
             ),
-          ),
           const SizedBox(height: 16),
           if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.all(32.0),
-              child: CircularProgressIndicator(),
+            Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                children: [
+                  _isYoutubeSearch 
+                    ? const Icon(Icons.movie_filter, size: 50, color: Colors.red)
+                    : const Icon(Icons.menu_book, size: 50, color: Colors.blue),
+                  const SizedBox(height: 16),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 8),
+                  Text(_isYoutubeSearch ? 'Buscando no YouTube...' : 'Buscando nos dicionários...'),
+                ],
+              ),
             ),
           if (!_isLoading && displayResults.isEmpty && _lastSearchQuery.isNotEmpty)
             const Padding(
@@ -283,6 +408,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   List<String> _enabledSources = [];
+  bool _autoYoutubeSearch = false;
   final Map<String, String> _sourceLabels = {
     'INES': 'INES (Dicionário INES)',
     'RedeSurdos': 'Rede Surdos (UFC)',
@@ -301,6 +427,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _enabledSources = prefs.getStringList('enabled_sources') ?? _sourceLabels.keys.toList();
+      _autoYoutubeSearch = prefs.getBool('auto_youtube_search') ?? false;
     });
   }
 
@@ -316,6 +443,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setStringList('enabled_sources', _enabledSources);
   }
 
+  _toggleAutoYoutube(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _autoYoutubeSearch = value;
+    });
+    await prefs.setBool('auto_youtube_search', value);
+  }
+
   Future<void> _launchUrl(String url) async {
     if (!await launchUrl(Uri.parse(url))) {
       throw Exception('Could not launch $url');
@@ -328,6 +463,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(title: const Text('Opções')),
       body: ListView(
         children: [
+          const ListTile(
+            title: Text('Configurações de Busca', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          SwitchListTile(
+            title: const Text('Busca automática no YouTube'),
+            subtitle: const Text('Se não encontrar nada nos dicionários, busca no YouTube'),
+            value: _autoYoutubeSearch,
+            onChanged: _toggleAutoYoutube,
+          ),
+          const Divider(),
           const ListTile(
             title: Text('Fontes de Pesquisa', style: TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text('Ative ou desative as fontes de palavras'),
@@ -396,6 +541,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
+          const Divider(),
+          const ListTile(
+            title: Text('Ajuda e Suporte', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          ListTile(
+            leading: const Icon(Icons.contact_support),
+            title: const Text('Suporte'),
+            onTap: () => _launchUrl('https://edbn.dev/suporte'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.email),
+            title: const Text('Contato'),
+            onTap: () => _launchUrl('https://edbn.dev/contato'),
+          ),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -431,6 +591,15 @@ class DictionaryItemCard extends StatefulWidget {
 
 class _DictionaryItemCardState extends State<DictionaryItemCard> {
   bool _isExpanded = false;
+  static const _channel = MethodChannel('com.example.libras_dictionary/share');
+
+  Future<void> _share(String text, String subject) async {
+    try {
+      await _channel.invokeMethod('share', {'text': text, 'subject': subject});
+    } on PlatformException catch (e) {
+      debugPrint("Failed to share: '${e.message}'.");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -464,6 +633,17 @@ class _DictionaryItemCardState extends State<DictionaryItemCard> {
                       ),
                     ),
                   ),
+                  if (widget.item.link != null)
+                    IconButton(
+                      icon: const Icon(Icons.share, color: Colors.white),
+                      onPressed: () {
+                        _share(
+                          'Veja este sinal de Libras para "${widget.item.title}": ${widget.item.link}',
+                          'Sinal de Libras: ${widget.item.title}',
+                        );
+                      },
+                      tooltip: 'Compartilhar sinal',
+                    ),
                   Icon(
                     _isExpanded ? Icons.expand_less : Icons.expand_more,
                     color: Colors.white,
@@ -725,6 +905,8 @@ Color getSourceColor(String source) {
       return Colors.purple.shade600;
     case 'SpreadTheSign':
       return Colors.orange.shade600;
+    case 'YouTube':
+      return Colors.red.shade800;
     default:
       return Colors.grey.shade600;
   }
