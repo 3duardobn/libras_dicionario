@@ -34,10 +34,10 @@ dev_dependencies:
 
 flutter_launcher_icons:
   android: "launcher_icon"
-  ios: false
-  image_path: "assets/icone_logo_vector_quality.png"
-  adaptive_icon_background: "#004b91"
-  adaptive_icon_foreground: "assets/icone_logo_vector_quality.png"
+  ios: true
+  image_path: "assets/icone_logo.svg"
+  adaptive_icon_background: "#1E88E5"
+  adaptive_icon_foreground: "assets/icone_logo.svg"
   min_sdk_android: 21
 
 flutter:
