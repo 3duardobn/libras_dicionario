@@ -1,10 +1,20 @@
-# Dicionário Integrado de Libras
+<div align="center">
 
-<p align="center">
-  <img src="libras_dictionary/Brazilian_Sign_Language_Symbol.svg" alt="Símbolo da Língua Brasileira de Sinais" width="120" height="120">
-</p>
+# 🤲 Dicionário Integrado de Libras
 
-Aplicativo Flutter multiplataforma que centraliza a busca de sinais em Libras (Língua Brasileira de Sinais) a partir de diversas fontes institucionais, acadêmicas e governamentais. O objetivo é facilitar o acesso de estudantes, intérpretes e da comunidade surda a vídeos e descrições de sinais em um único lugar.
+<img src="libras_dictionary/Brazilian_Sign_Language_Symbol.svg" alt="Símbolo da Língua Brasileira de Sinais" width="200" height="200">
+
+### Aplicativo Flutter para centralização de sinais em Libras
+
+[![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
+
+</div>
+
+---
+
+Aplicativo multiplataforma que centraliza a busca de sinais em Libras (Língua Brasileira de Sinais) a partir de diversas fontes institucionais, acadêmicas e governamentais. O objetivo é facilitar o acesso de estudantes, intérpretes e da comunidade surda a vídeos e descrições de sinais em um único lugar.
 
 ## 🚀 Funcionalidades
 
