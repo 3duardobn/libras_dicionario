@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:diacritic/diacritic.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'models.dart';
 
 class ApiService {
   final http.Client client;
   List<dynamic>? _cachedInesData;
+  final _yt = YoutubeExplode();
 
   ApiService({http.Client? client}) : client = client ?? http.Client();
 
@@ -37,6 +39,24 @@ class ApiService {
     return results;
   }
 
+  Future<List<DictItem>> searchYouTube(String query) async {
+    try {
+      final searchList = await _yt.search.search("$query em libras");
+      return searchList.map((video) {
+        return DictItem(
+          title: video.title,
+          description: video.description,
+          youtubeId: video.id.value,
+          link: video.url,
+          source: 'YouTube',
+        );
+      }).toList();
+    } catch (e) {
+      print('Error searching YouTube: $e');
+      return [];
+    }
+  }
+
   Future<List<DictItem>> _fetchRedeSurdos(String query) async {
     final encodedQuery = Uri.encodeQueryComponent(query);
     final normalizedQuery = removeDiacritics(query).toLowerCase();
@@ -60,21 +80,17 @@ class ApiService {
 
       final filteredData = data.where((item) {
         final title = item['title']['rendered'] as String?;
-        final content = item['content']['rendered'] as String?;
-
         final normalizedTitle =
             title != null ? removeDiacritics(title).toLowerCase() : '';
-        final normalizedContent =
-            content != null ? removeDiacritics(content).toLowerCase() : '';
 
-        return wordBound.hasMatch(normalizedTitle) ||
-            wordBound.hasMatch(normalizedContent);
+        return wordBound.hasMatch(normalizedTitle);
       }).toList();
 
       return filteredData.map((item) {
         final title = item['title']['rendered'];
         final content = item['content']['rendered'];
         final excerpt = item['excerpt']['rendered'];
+        final link = item['link'];
 
         String? youtubeId;
         final match = exp.firstMatch(content);
@@ -93,6 +109,7 @@ class ApiService {
           title: title,
           description: excerpt.isNotEmpty ? excerpt : content,
           youtubeId: youtubeId,
+          link: link,
           source: 'RedeSurdos',
         );
       }).toList();
@@ -135,15 +152,11 @@ class ApiService {
 
       for (var item in _cachedInesData!) {
         final String? palavra = item['palavra'];
-        final String? descricao = item['descricao'];
 
         final normalizedPalavra =
             palavra != null ? removeDiacritics(palavra).toLowerCase() : '';
-        final normalizedDescricao =
-            descricao != null ? removeDiacritics(descricao).toLowerCase() : '';
 
-        if (wordBound.hasMatch(normalizedPalavra) ||
-            wordBound.hasMatch(normalizedDescricao)) {
+        if (wordBound.hasMatch(normalizedPalavra)) {
           final String? videoFilename = item['video'];
           String? videoUrl;
           if (videoFilename != null && videoFilename.isNotEmpty) {
@@ -165,6 +178,7 @@ class ApiService {
             libras: item['libras'],
             videoUrl: videoUrl,
             imageUrl: imageUrl,
+            link: 'https://dicionario.ines.gov.br/pt/search?word=${Uri.encodeComponent(palavra ?? "")}',
             source: 'INES',
           ));
         }
@@ -231,7 +245,12 @@ class ApiService {
         if (videoMatch != null) {
           var videoUrl = videoMatch.group(1)?.trim();
           if (videoUrl != null && videoUrl.isNotEmpty) {
-            return DictItem(title: title, videoUrl: videoUrl, source: 'UFV');
+            return DictItem(
+              title: title,
+              videoUrl: videoUrl,
+              link: urlStr,
+              source: 'UFV',
+            );
           }
         }
       }
@@ -340,10 +359,8 @@ class ApiService {
 
         if (title != null && content != null) {
           final normalizedTitle = removeDiacritics(title).toLowerCase();
-          final normalizedContent = removeDiacritics(content).toLowerCase();
 
-          if (wordBound.hasMatch(normalizedTitle) ||
-              wordBound.hasMatch(normalizedContent)) {
+          if (wordBound.hasMatch(normalizedTitle)) {
             final extraction = _extractVideoAndYoutubeId(content);
 
             results.add(DictItem(
@@ -351,6 +368,7 @@ class ApiService {
               description: item['excerpt']?['rendered'] ?? '',
               videoUrl: extraction.videoUrl,
               youtubeId: extraction.youtubeId,
+              link: item['link'],
               source: 'LibrasAcademicaUFF',
             ));
           }
@@ -402,6 +420,7 @@ class ApiService {
               results.add(DictItem(
                 title: title,
                 videoUrl: videoUrl,
+                link: url.toString(),
                 source: 'SpreadTheSign',
               ));
             }
@@ -468,6 +487,7 @@ class ApiService {
           return DictItem(
             title: title,
             videoUrl: videoMatch.group(1),
+            link: urlStr,
             source: 'SpreadTheSign',
           );
         }
@@ -476,5 +496,9 @@ class ApiService {
       print('Error fetching SpreadTheSign detail: $e');
     }
     return null;
+  }
+
+  void dispose() {
+    _yt.close();
   }
 }
