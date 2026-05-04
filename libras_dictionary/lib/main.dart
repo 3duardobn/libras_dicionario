@@ -89,40 +89,53 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Container Circular que você pediu
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(40), // Espaço interno para o ícone
               decoration: BoxDecoration(
-                color: isDark ? Colors.white.withOpacity(0.05) : Colors.blue.shade50,
+                color: isDark ? Colors.black : Colors.blue.shade600, // Círculo Preto ou Azul
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+                border: Border.all(
+                  color: isDark ? Colors.white24 : Colors.blue.shade300,
+                  width: 2,
+                ),
               ),
               child: SvgPicture.asset(
                 'assets/icone_logo.svg',
-                width: 180,
-                fit: BoxFit.contain, // Garante que não estique
-                colorFilter: ColorFilter.mode(
-                  isDark ? Colors.white : Colors.blue.shade800,
+                width: 140,
+                fit: BoxFit.contain, 
+                // Ícone sempre Branco sobre o círculo colorido/preto
+                colorFilter: const ColorFilter.mode(
+                  Colors.white,
                   BlendMode.srcIn,
                 ),
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 48),
             Text(
               'Dicionário Libras',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
                 color: isDark ? Colors.white : Colors.blue.shade900,
-                letterSpacing: 1.2,
+                letterSpacing: 1.5,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             SizedBox(
-              width: 40,
-              height: 40,
+              width: 45,
+              height: 45,
               child: CircularProgressIndicator(
                 strokeWidth: 3,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  isDark ? Colors.white70 : Colors.blue.shade800,
+                  isDark ? Colors.blue.shade400 : Colors.blue.shade800,
                 ),
               ),
             ),
@@ -146,9 +159,9 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
   List<DictItem> _allSearchResults = [];
   bool _isLoading = false;
   bool _isYoutubeSearch = false;
-  List<String> _selectedSourcesList = ['Ambos'];
+  Set<String> _activeFilters = {'Ambos'};
   String _lastSearchQuery = '';
-  List<String> _enabledSources = ['INES', 'RedeSurdos', 'UFV', 'LibrasAcademicaUFF', 'SpreadTheSign'];
+  List<String> _enabledSources = ['INES', 'UFV', 'RedeSurdos', 'LibrasAcademicaUFF', 'SpreadTheSign'];
   bool _autoYoutubeSearch = false;
 
   @override
@@ -161,17 +174,46 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _enabledSources = prefs.getStringList('enabled_sources') ?? 
-          ['INES', 'RedeSurdos', 'UFV', 'LibrasAcademicaUFF', 'SpreadTheSign'];
+          ['INES', 'UFV', 'RedeSurdos', 'LibrasAcademicaUFF', 'SpreadTheSign'];
       _autoYoutubeSearch = prefs.getBool('auto_youtube_search') ?? false;
+      _activeFilters = {'Ambos'};
     });
   }
 
   List<DictItem> get _filteredResults {
     if (_isYoutubeSearch) return _allSearchResults;
-    if (_selectedSourcesList.contains('Ambos')) {
+    if (_activeFilters.contains('Ambos')) {
       return _allSearchResults.where((item) => _enabledSources.contains(item.source)).toList();
     }
-    return _allSearchResults.where((item) => _selectedSourcesList.contains(item.source)).toList();
+    return _allSearchResults.where((item) => _activeFilters.contains(item.source)).toList();
+  }
+
+  void _onFilterChanged(String filter, bool selected) {
+    setState(() {
+      if (filter == 'Ambos') {
+        _activeFilters = {'Ambos'};
+      } else {
+        _activeFilters.remove('Ambos');
+        if (selected) {
+          _activeFilters.add(filter);
+        } else {
+          _activeFilters.remove(filter);
+        }
+
+        // Se selecionou todas as fontes habilitadas, volta para "Ambos"
+        bool allSelected = true;
+        for (var src in _enabledSources) {
+          if (!_activeFilters.contains(src)) {
+            allSelected = false;
+            break;
+          }
+        }
+        
+        if (allSelected || _activeFilters.isEmpty) {
+          _activeFilters = {'Ambos'};
+        }
+      }
+    });
   }
 
   void _performSearch() async {
@@ -245,6 +287,7 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Dicionário Libras'),
         actions: [
@@ -291,7 +334,7 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
                           : null,
                     ),
                     onChanged: (text) {
-                      setState(() {}); // Atualiza para mostrar/esconder o botão clear
+                      setState(() {}); 
                     },
                     onSubmitted: (_) => _performSearch(),
                   ),
@@ -306,59 +349,66 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
           ),
           if (!_isYoutubeSearch)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Wrap(
                 spacing: 8.0,
-                runSpacing: 4.0,
+                runSpacing: 8.0,
+                alignment: WrapAlignment.center,
                 children: [
                   FilterChip(
-                    label: const Text('Todos'),
-                    selected: _selectedSourcesList.contains('Ambos'),
-                    onSelected: (bool selected) {
-                      setState(() {
-                        if (selected) {
-                          // Se marcar "Todos", remove todo o resto
-                          _selectedSourcesList = ['Ambos'];
-                        } else {
-                          // Se desmarcar "Todos" e não tiver mais nada, mantém "Todos"
-                          if (_selectedSourcesList.length == 1 && _selectedSourcesList.contains('Ambos')) {
-                            // Não faz nada, mantém selecionado ou forçar? 
-                            // O comportamento padrão do FilterChip permite desmarcar.
-                            // Vamos garantir que sempre haja algo selecionado.
-                          }
-                        }
-                      });
-                    },
+                    label: AnimatedSize(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_activeFilters.contains('Ambos'))
+                            const Padding(
+                              padding: EdgeInsets.only(right: 4.0),
+                              child: Icon(Icons.check, size: 14),
+                            ),
+                          const Text('Todos', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                    selected: _activeFilters.contains('Ambos'),
+                    onSelected: (val) => _onFilterChanged('Ambos', val),
+                    showCheckmark: false,
+                    elevation: 1,
+                    pressElevation: 2,
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
                   ),
                   ..._enabledSources.map((source) {
-                    final isSelected = _selectedSourcesList.contains(source);
+                    String displayLabel = source;
+                    if (source == 'RedeSurdos') displayLabel = 'Rede Surdos';
+                    if (source == 'LibrasAcademicaUFF') displayLabel = 'Libras Acadêmica';
+                    
                     return FilterChip(
-                      label: Text(source),
-                      selected: isSelected,
-                      selectedColor: getSourceColor(source).withOpacity(0.3),
-                      checkmarkColor: getSourceColor(source),
-                      labelStyle: TextStyle(
-                        color: isSelected ? getSourceColor(source) : null,
-                        fontWeight: isSelected ? FontWeight.bold : null,
+                      label: AnimatedSize(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOut,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_activeFilters.contains(source))
+                              const Padding(
+                                padding: EdgeInsets.only(right: 4.0),
+                                child: Icon(Icons.check, size: 14),
+                              ),
+                            Text(displayLabel, style: const TextStyle(fontSize: 13)),
+                          ],
+                        ),
                       ),
-                      onSelected: (bool selected) {
-                        setState(() {
-                          if (selected) {
-                            // Se marcar um específico, remove o "Todos"
-                            _selectedSourcesList.remove('Ambos');
-                            if (!_selectedSourcesList.contains(source)) {
-                              _selectedSourcesList.add(source);
-                            }
-                          } else {
-                            // Se desmarcar um específico
-                            _selectedSourcesList.remove(source);
-                            // Se ficar vazio, volta para "Todos"
-                            if (_selectedSourcesList.isEmpty) {
-                              _selectedSourcesList = ['Ambos'];
-                            }
-                          }
-                        });
-                      },
+                      selected: _activeFilters.contains(source),
+                      onSelected: (val) => _onFilterChanged(source, val),
+                      showCheckmark: false,
+                      selectedColor: getSourceColor(source).withOpacity(0.2),
+                      checkmarkColor: getSourceColor(source),
+                      elevation: 1,
+                      pressElevation: 2,
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
                     );
                   }).toList(),
                 ],
@@ -411,8 +461,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _autoYoutubeSearch = false;
   final Map<String, String> _sourceLabels = {
     'INES': 'INES (Dicionário INES)',
-    'RedeSurdos': 'Rede Surdos (UFC)',
     'UFV': 'UFV (Universidade Federal de Viçosa)',
+    'RedeSurdos': 'Rede Surdos (UFC)',
     'LibrasAcademicaUFF': 'Libras Acadêmica (UFF)',
     'SpreadTheSign': 'SpreadTheSign',
   };
@@ -749,6 +799,7 @@ class YoutubePlayerWidget extends StatefulWidget {
 
 class _YoutubePlayerWidgetState extends State<YoutubePlayerWidget> {
   late YoutubePlayerController _controller;
+  bool _isReplaying = false;
 
   @override
   void initState() {
@@ -758,21 +809,54 @@ class _YoutubePlayerWidgetState extends State<YoutubePlayerWidget> {
       flags: const YoutubePlayerFlags(
         autoPlay: true,
         mute: false,
-        loop: true,
+        loop: false, 
+        hideControls: true,             // Esconde os controles nativos do YouTube
+        hideThumbnail: true,            // Esconde a thumb de carregamento
+        controlsVisibleAtStart: false,  // Não mostra controles ao carregar
+        disableDragSeek: true,
+      ),
+    )..addListener(_onPlayerStateChange);
+  }
+
+  void _onPlayerStateChange() {
+    if (!_controller.value.isReady) return;
+
+    final position = _controller.value.position;
+    final duration = _controller.value.metaData.duration;
+
+    // Volta pro começo ~300ms ANTES de acabar para evitar a tela de "final" do YouTube (que pisca a UI)
+    if (duration.inMilliseconds > 0 && position.inMilliseconds >= duration.inMilliseconds - 300 && !_isReplaying) {
+      _isReplaying = true;
+      _controller.seekTo(Duration.zero);
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (mounted) _isReplaying = false;
+      });
+    } else if (_controller.value.playerState == PlayerState.ended && !_isReplaying) {
+      // Fallback de segurança
+      _isReplaying = true;
+      _controller.seekTo(Duration.zero);
+      _controller.play();
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (mounted) _isReplaying = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer( // Impede o usuário de clicar no logo do YT ou pausar o vídeo na tela
+      child: YoutubePlayer(
+        controller: _controller,
+        showVideoProgressIndicator: false, // Remove a barra de progresso do Flutter
+        bottomActions: const [],           // Limpa ações inferiores
+        topActions: const [],              // Limpa ações superiores
       ),
     );
   }
 
   @override
-  Widget build(BuildContext context) {
-    return YoutubePlayer(
-      controller: _controller,
-      showVideoProgressIndicator: true,
-    );
-  }
-
-  @override
   void dispose() {
+    _controller.removeListener(_onPlayerStateChange);
     _controller.dispose();
     super.dispose();
   }
