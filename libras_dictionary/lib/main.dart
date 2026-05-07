@@ -163,6 +163,7 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
   String _lastSearchQuery = '';
   List<String> _enabledSources = ['INES', 'UFV', 'RedeSurdos', 'LibrasAcademicaUFF', 'SpreadTheSign'];
   bool _autoYoutubeSearch = false;
+  bool _isShareMinimal = false;
 
   @override
   void initState() {
@@ -176,6 +177,7 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
       _enabledSources = prefs.getStringList('enabled_sources') ?? 
           ['INES', 'UFV', 'RedeSurdos', 'LibrasAcademicaUFF', 'SpreadTheSign'];
       _autoYoutubeSearch = prefs.getBool('auto_youtube_search') ?? false;
+      _isShareMinimal = prefs.getBool('is_share_minimal') ?? false;
       _activeFilters = {'Ambos'};
     });
   }
@@ -439,7 +441,10 @@ class _DictionaryHomePageState extends State<DictionaryHomePage> {
             child: ListView.builder(
               itemCount: displayResults.length,
               itemBuilder: (context, index) {
-                return DictionaryItemCard(item: displayResults[index]);
+                return DictionaryItemCard(
+                  item: displayResults[index],
+                  isShareMinimal: _isShareMinimal,
+                );
               },
             ),
           ),
@@ -459,6 +464,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   List<String> _enabledSources = [];
   bool _autoYoutubeSearch = false;
+  bool _isShareMinimal = false;
   final Map<String, String> _sourceLabels = {
     'INES': 'INES (Dicionário INES)',
     'UFV': 'UFV (Universidade Federal de Viçosa)',
@@ -478,6 +484,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       _enabledSources = prefs.getStringList('enabled_sources') ?? _sourceLabels.keys.toList();
       _autoYoutubeSearch = prefs.getBool('auto_youtube_search') ?? false;
+      _isShareMinimal = prefs.getBool('is_share_minimal') ?? false;
     });
   }
 
@@ -501,6 +508,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setBool('auto_youtube_search', value);
   }
 
+  _toggleShareMinimal(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isShareMinimal = value;
+    });
+    await prefs.setBool('is_share_minimal', value);
+  }
+
   Future<void> _launchUrl(String url) async {
     if (!await launchUrl(Uri.parse(url))) {
       throw Exception('Could not launch $url');
@@ -521,6 +536,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: const Text('Se não encontrar nada nos dicionários, busca no YouTube'),
             value: _autoYoutubeSearch,
             onChanged: _toggleAutoYoutube,
+          ),
+          SwitchListTile(
+            title: const Text('Texto de compartilhamento mínimo'),
+            subtitle: const Text('Envia apenas a palavra e o link ao compartilhar'),
+            value: _isShareMinimal,
+            onChanged: _toggleShareMinimal,
           ),
           const Divider(),
           const ListTile(
@@ -639,7 +660,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
 class DictionaryItemCard extends StatefulWidget {
   final DictItem item;
-  const DictionaryItemCard({super.key, required this.item});
+  final bool isShareMinimal;
+  const DictionaryItemCard({super.key, required this.item, this.isShareMinimal = false});
 
   @override
   State<DictionaryItemCard> createState() => _DictionaryItemCardState();
@@ -693,8 +715,11 @@ class _DictionaryItemCardState extends State<DictionaryItemCard> {
                     IconButton(
                       icon: const Icon(Icons.share, color: Colors.white),
                       onPressed: () {
+                        final shareText = widget.isShareMinimal
+                            ? '${widget.item.title}: ${widget.item.link}'
+                            : 'Veja este sinal de Libras para "${widget.item.title}": ${widget.item.link}';
                         _share(
-                          'Veja este sinal de Libras para "${widget.item.title}": ${widget.item.link}',
+                          shareText,
                           'Sinal de Libras: ${widget.item.title}',
                         );
                       },
