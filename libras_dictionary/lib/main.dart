@@ -1,3 +1,18 @@
+// Copyright (C) 2026 Eduardo Barroso Nunes
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_html/flutter_html.dart';
@@ -605,7 +620,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Este projeto é código aberto sob a licença GNU General Public License v3.0.'),
+                const Text('Este projeto é de domínio público (CC0).'),
                 const SizedBox(height: 8),
                 InkWell(
                   onTap: () => _launchUrl('https://github.com/3duardobn/libras_dicionario'),
@@ -619,25 +634,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const Divider(),
-          const ListTile(
-            title: Text('Ajuda e Suporte', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          ListTile(
-            leading: const Icon(Icons.contact_support),
-            title: const Text('Suporte'),
-            onTap: () => _launchUrl('https://edbn.dev/suporte'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.email),
-            title: const Text('Contato'),
-            onTap: () => _launchUrl('https://edbn.dev/contato'),
-          ),
-          const SizedBox(height: 16),
         ],
       ),
     );
   }
-
+}
   Widget _buildSourceCredit(String name, String org, String url, String copyright) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
