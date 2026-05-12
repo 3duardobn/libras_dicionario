@@ -605,7 +605,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Este projeto é código aberto sob a licença GNU General Public License v3.0.'),
+                const Text('Este projeto é de domínio público (CC0).'),
                 const SizedBox(height: 8),
                 InkWell(
                   onTap: () => _launchUrl('https://github.com/3duardobn/libras_dicionario'),
@@ -619,25 +619,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const Divider(),
-          const ListTile(
-            title: Text('Ajuda e Suporte', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          ListTile(
-            leading: const Icon(Icons.contact_support),
-            title: const Text('Suporte'),
-            onTap: () => _launchUrl('https://edbn.dev/suporte'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.email),
-            title: const Text('Contato'),
-            onTap: () => _launchUrl('https://edbn.dev/contato'),
-          ),
-          const SizedBox(height: 16),
         ],
       ),
     );
   }
-
+}
   Widget _buildSourceCredit(String name, String org, String url, String copyright) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
