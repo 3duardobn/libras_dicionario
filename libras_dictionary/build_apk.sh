@@ -14,19 +14,23 @@ if [ ! -f "$FLUTTER" ]; then
     exit 1
 fi
 
-# 2. Obter dependências
+# 2. Aceitar licenças do Android SDK
+echo "📜 Aceitando licenças do Android SDK..."
+yes | "$FLUTTER" doctor --android-licenses
+
+# 3. Obter dependências
 echo "📦 Obtendo dependências (pub get)..."
 "$FLUTTER" pub get
 
-# 3. Limpar builds anteriores
+# 4. Limpar builds anteriores
 echo "🧹 Limpando builds antigos..."
 "$FLUTTER" clean
 
-# 4. Gerar o APK
+# 5. Gerar o APK
 echo "🏗️ Gerando APK de release..."
 "$FLUTTER" build apk --release
 
-# 5. Verificar se o APK foi gerado
+# 6. Verificar se o APK foi gerado
 APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
 
 if [ -f "$APK_PATH" ]; then
