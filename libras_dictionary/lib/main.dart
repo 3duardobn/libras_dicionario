@@ -623,7 +623,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-}
+
   Widget _buildSourceCredit(String name, String org, String url, String copyright) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
