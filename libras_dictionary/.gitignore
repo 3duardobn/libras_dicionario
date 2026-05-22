@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# ClojureDart generated
+.clojuredart/
+.cpcache/
+lib/cljd-out/

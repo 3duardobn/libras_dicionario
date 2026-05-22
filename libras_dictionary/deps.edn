@@ -1,0 +1,7 @@
+{:paths ["src"]
+ :deps {tensegritics/clojuredart {:git/url "https://github.com/tensegritics/clojuredart"
+                                 :sha "9df5158656d0280f6805828d1159074744d0089c"} ; Use a recent SHA
+        kennytilton/flutter-mx   {:git/url "https://github.com/kennytilton/flutter-mx"
+                                 :sha "576c6691459419069d107872688f2195f68b321a"}} ; Use a recent SHA
+ :aliases
+ {:cljd {:main-opts ["-m" "cljd.build"]}}}

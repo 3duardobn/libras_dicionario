@@ -1,0 +1,32 @@
+# Copyright (C) 2026 Eduardo Barroso Nunes
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+(ns libras-dictionary.models)
+
+(defrecord DictItem
+  [title description exemplo libras video-url image-url youtube-id link source])
+
+(defn make-dict-item
+  [& {:keys [title description exemplo libras video-url image-url youtube-id link source]}]
+  (map->DictItem
+   {:title title
+    :description description
+    :exemplo exemplo
+    :libras libras
+    :video-url video-url
+    :image-url image-url
+    :youtube-id youtube-id
+    :link link
+    :source source}))

@@ -120,8 +120,6 @@ app.*.symbols
 
 libras_dictionary/.dart_tool/
 libras_dictionary/build/
-libras_dictionary/build/
-libras_dictionary/.dart_tool/
 libras_dictionary/.idea/
 libras_dictionary/android/.gradle/
 libras_dictionary/windows/
@@ -132,3 +130,10 @@ libras_dictionary/web/
 
 # Flutter SDK embutido
 flutter/
+
+# ClojureDart
+.clj-kondo/
+.lsp/
+libras_dictionary/.clojuredart/
+libras_dictionary/.cpcache/
+libras_dictionary/lib/cljd-out/
