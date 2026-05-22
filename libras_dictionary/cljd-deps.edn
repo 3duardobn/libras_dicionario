@@ -1,4 +1,4 @@
 {:deps {tensegritics/clojuredart {:git/url "https://github.com/tensegritics/clojuredart"
-                                 :sha "9df5158656d0280f6805828d1159074744d0089c"}
+                                 :sha "c68c42ae1b1eac9b8dade4d77cf6cbb21869f33a"}
         kennytilton/flutter-mx   {:git/url "https://github.com/kennytilton/flutter-mx"
-                                 :sha "576c6691459419069d107872688f2195f68b321a"}}}
+                                 :sha "553824f5e043004889c1626210f0119e7a83d737"}}}
