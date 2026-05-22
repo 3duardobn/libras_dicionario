@@ -1,0 +1,106 @@
+(ns libras-dictionary.api
+  (:require [cljd.f :as f]
+            [libras-dictionary.models :as m]
+            ["package:http/http.dart" :as http]
+            ["dart:convert" :as json]
+            ["package:diacritic/diacritic.dart" :refer [removeDiacritics]]
+            ["package:youtube_explode_dart/youtube_explode_dart.dart" :as yt]))
+
+(defonce ines-cache (atom nil))
+(defonce yt-client (yt/YoutubeExplode.))
+
+(defn normalize [s]
+  (-> s removeDiacritics .toLowerCase))
+
+(defn word-bound-regex [query]
+  (RegExp. (str "\\b" (RegExp.escape (normalize query)) "\\b") :unicode true))
+
+(defn fetch-ines [query]
+  (f/async
+   (when (nil? @ines-cache)
+     (let [url (Uri.parse "https://dicionario.ines.gov.br/public/site/js/palavras.js")
+           response (await (http/get url))]
+       (when (= (.-statusCode response) 200)
+         (let [body (.-body response)
+               start (.indexOf body "[")
+               end (.lastIndexOf body "]")]
+           (when (and (not= start -1) (not= end -1))
+             (let [json-str (.substring body start (inc end))]
+               (reset! ines-cache (json/json.decode json-str))))))))
+   (if-let [data @ines-cache]
+     (let [regex (word-bound-regex query)]
+       (->> data
+            (filter (fn [item]
+                      (let [palavra (get item "palavra" "")]
+                        (.hasMatch regex (normalize palavra)))))
+            (map (fn [item]
+                   (let [palavra (get item "palavra")
+                         video (get item "video")
+                         image (get item "image")]
+                     (m/make-dict-item
+                      :title (or palavra "Sem título")
+                      :description (get item "descricao")
+                      :exemplo (get item "exemplo")
+                      :libras (get item "libras")
+                      :video-url (when (and video (not (.isEmpty video)))
+                                   (str "https://dicionario.ines.gov.br/public/media/palavras/videos/" video))
+                      :image-url (when (and image (not (.isEmpty image)))
+                                   (str "https://dicionario.ines.gov.br/public/media/palavras/images/" image))
+                      :link (str "https://dicionario.ines.gov.br/pt/search?word=" (Uri.encodeComponent (or palavra "")))
+                      :source "INES"))))))
+     [])))
+
+(defn fetch-rede-surdos [query]
+  (f/async
+   (let [encoded-query (Uri.encodeQueryComponent query)
+         url (Uri.parse (str "https://redesurdosce.ufc.br/wp-json/wp/v2/posts?search=" encoded-query))
+         response (await (http/get url))]
+     (if (= (.-statusCode response) 200)
+       (let [data (json/json.decode (.-body response))
+             regex (word-bound-regex query)
+             yt-embed-exp (RegExp. "src=\"https:\\/\\/www\\.youtube\\.com\\/embed\\/([^\"?]+)")
+             yt-watch-exp (RegExp. "https:\\/\\/www\\.youtube\\.com\\/watch\\?v=([^\"&\\s]+)")]
+         (->> data
+              (filter (fn [item]
+                        (let [title (get-in item ["title" "rendered"] "")]
+                          (.hasMatch regex (normalize title)))))
+              (map (fn [item]
+                     (let [content (get-in item ["content" "rendered"])
+                           yt-id (or (some-> (.firstMatch yt-embed-exp content) (.group 1))
+                                     (some-> (.firstMatch yt-watch-exp content) (.group 1)))]
+                       (m/make-dict-item
+                        :title (get-in item ["title" "rendered"])
+                        :description (let [excerpt (get-in item ["excerpt" "rendered"] "")]
+                                       (if (.isEmpty excerpt) content excerpt))
+                        :youtube-id yt-id
+                        :link (get item "link")
+                        :source "RedeSurdos"))))))
+       []))))
+
+(defn search-youtube [query]
+  (f/async
+   (try
+     (let [search-list (await (.. yt-client -search (search (str query " em libras"))))]
+       (map (fn [video]
+              (m/make-dict-item
+               :title (.-title video)
+               :description (.-description video)
+               :youtube-id (.. video -id -value)
+               :link (.-url video)
+               :source "YouTube"))
+            search-list))
+     (catch Exception e
+       (println "Error searching YouTube:" e)
+       []))))
+
+(defn search-all [query & {:keys [source] :or {source "Ambos"}}]
+  (f/async
+   (let [futures (cond-> []
+                   (or (= source "Ambos") (= source "RedeSurdos"))
+                   (conj (fetch-rede-surdos query))
+
+                   (or (= source "Ambos") (= source "INES"))
+                   (conj (fetch-ines query)))]
+     ;; Add more sources here as they are ported
+     (let [results-list (await (Future.wait futures))]
+       (flatten results-list)))))

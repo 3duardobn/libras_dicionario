@@ -1,0 +1,142 @@
+(ns libras-dictionary.main
+  (:require [cljd.f :as f]
+            [libras-dictionary.api :as api]
+            [libras-dictionary.models :as m]
+            [tilton.mx.api :refer [mx-obj cI cF mget mset! mset-by! mupdate! mk] :as mx]
+            [tilton.mx.flutter :as fx]
+            ["package:flutter/material.dart" :as mat]
+            ["package:shared_preferences/shared_preferences.dart" :as prefs]
+            ["package:flutter_svg/flutter_svg.dart" :as svg]
+            ["package:url_launcher/url_launcher.dart" :as url-l]))
+
+;; --- Global State (Matrix) ---
+
+(defonce app-state
+  (mx/mk-cell-group
+   {:theme-mode (cI mat/ThemeMode.light)
+    :search-query (cI "")
+    :is-loading (cI false)
+    :search-results (cI [])
+    :is-youtube-search (cI false)
+    :enabled-sources (cI #{"INES" "UFV" "RedeSurdos" "LibrasAcademicaUFF" "SpreadTheSign"})
+    :active-filters (cI #{"Ambos"})
+    :auto-youtube-search (cI false)
+    :is-share-minimal (cI false)}))
+
+;; --- Persistence ---
+
+(defn load-settings! []
+  (f/async
+   (let [p (await (prefs/SharedPreferences.getInstance))]
+     (mset! app-state :theme-mode (if (.getBool p "isDark" :defaultValue false) mat/ThemeMode.dark mat/ThemeMode.light))
+     (mset! app-state :auto-youtube-search (.getBool p "auto_youtube_search" :defaultValue false))
+     (mset! app-state :is-share-minimal (.getBool p "is_share_minimal" :defaultValue false))
+     (when-let [sources (.getStringList p "enabled_sources")]
+       (mset! app-state :enabled-sources (set sources))))))
+
+;; --- Actions ---
+
+(defn toggle-theme! []
+  (f/async
+   (let [new-mode (if (= (mget app-state :theme-mode) mat/ThemeMode.light) mat/ThemeMode.dark mat/ThemeMode.light)
+         p (await (prefs/SharedPreferences.getInstance))]
+     (mset! app-state :theme-mode new-mode)
+     (.setBool p "isDark" (= new-mode mat/ThemeMode.dark)))))
+
+(defn perform-search! [query]
+  (f/async
+   (mset! app-state :is-loading true)
+   (mset! app-state :is-youtube-search false)
+   (let [results (await (api/search-all query))]
+     (if (and (empty? results) (mget app-state :auto-youtube-search))
+       (let [yt-results (await (api/search-youtube query))]
+         (mset! app-state :search-results yt-results)
+         (mset! app-state :is-youtube-search true))
+       (mset! app-state :search-results results))
+     (mset! app-state :is-loading false))))
+
+;; --- UI Components ---
+
+(defn splash-screen []
+  (fx/scaffold
+   {:backgroundColor (cF (if (= (mget app-state :theme-mode) mat/ThemeMode.dark)
+                           (mat/Color 0xFF121212)
+                           mat/Colors.white))}
+   (fx/center
+    (fx/column
+     {:mainAxisAlignment mat/MainAxisAlignment.center}
+     [(fx/container
+       {:padding (mat/EdgeInsets.all 40)
+        :decoration (cF (mat/BoxDecoration.
+                         :color (if (= (mget app-state :theme-mode) mat/ThemeMode.dark)
+                                  mat/Colors.black
+                                  (.shade600 mat/Colors.blue))
+                         :shape mat/BoxShape.circle
+                         :border (mat/Border.all
+                                  :color (if (= (mget app-state :theme-mode) mat/ThemeMode.dark)
+                                           mat/Colors.white24
+                                           (.shade300 mat/Colors.blue))
+                                  :width 2)))}
+       (fx/svg-picture-asset
+        "assets/icone_logo.svg"
+        {:width 140
+         :colorFilter (mat/ColorFilter.mode mat/Colors.white mat/BlendMode.srcIn)}))
+      (fx/sized-box {:height 48})
+      (fx/text
+       "Dicionário Libras"
+       {:style (cF (mat/TextStyle.
+                    :fontSize 32
+                    :fontWeight mat/FontWeight.bold
+                    :color (if (= (mget app-state :theme-mode) mat/ThemeMode.dark)
+                             mat/Colors.white
+                             (.shade900 mat/Colors.blue))
+                    :letterSpacing 1.5))})
+      (fx/sized-box {:height 32})
+      (fx/circular-progress-indicator
+       {:valueColor (cF (mat/AlwaysStoppedAnimation.
+                         (if (= (mget app-state :theme-mode) mat/ThemeMode.dark)
+                           (.shade400 mat/Colors.blue)
+                           (.shade800 mat/Colors.blue))))})]))))
+
+(defn main-app []
+  (fx/material-app
+   {:title "Dicionário Libras"
+    :debugShowCheckedModeBanner false
+    :themeMode (cF (mget app-state :theme-mode))
+    :theme (mat/ThemeData. :useMaterial3 true :brightness mat/Brightness.light :colorScheme (mat/ColorScheme.fromSeed :seedColor mat/Colors.blue))
+    :darkTheme (mat/ThemeData. :useMaterial3 true :brightness mat/Brightness.dark :colorScheme (mat/ColorScheme.fromSeed :seedColor mat/Colors.blue :brightness mat/Brightness.dark))}
+   (fx/scaffold
+    {:appBar (fx/app-bar
+              {:title (fx/text "Dicionário Libras")
+               :actions [(fx/icon-button
+                          {:icon (cF (mat/Icon. (if (= (mget app-state :theme-mode) mat/ThemeMode.dark)
+                                                 mat/Icons.light_mode
+                                                 mat/Icons.dark_mode)))
+                           :onPressed toggle-theme!})]})
+     :body (fx/column
+            [(fx/padding
+              {:padding (mat/EdgeInsets.all 16)}
+              (fx/row
+               [(fx/expanded
+                 (fx/text-field
+                  {:decoration (mat/InputDecoration. :labelText "Pesquisar palavra (Português)" :border (mat/OutlineInputBorder.))
+                   :onSubmitted perform-search!}))
+                (fx/sized-box {:width 8})
+                (fx/elevated-button
+                 {:onPressed #(perform-search! (mget app-state :search-query))
+                  :child (fx/text "Buscar")})]))
+             (fx/expanded
+              (fx/list-view-builder
+               {:itemCount (cF (count (mget app-state :search-results)))
+                :itemBuilder (fn [ctx idx]
+                               (let [item (nth (mget app-state :search-results) idx)]
+                                 (fx/card
+                                  {:margin (mat/EdgeInsets.symmetric :horizontal 16 :vertical 8)}
+                                  (fx/list-tile
+                                   {:title (fx/text (str (:title item) " (" (:source item) ")"))}))))}))])})))
+
+(defn main []
+  (f/async
+   (mat/WidgetsFlutterBinding.ensureInitialized)
+   (await (load-settings!))
+   (fx/run-app (main-app))))

@@ -1,0 +1,17 @@
+(ns libras-dictionary.models)
+
+(defrecord DictItem
+  [title description exemplo libras video-url image-url youtube-id link source])
+
+(defn make-dict-item
+  [& {:keys [title description exemplo libras video-url image-url youtube-id link source]}]
+  (map->DictItem
+   {:title title
+    :description description
+    :exemplo exemplo
+    :libras libras
+    :video-url video-url
+    :image-url image-url
+    :youtube-id youtube-id
+    :link link
+    :source source}))
