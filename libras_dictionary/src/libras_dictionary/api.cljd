@@ -16,63 +16,88 @@
   (RegExp. (str "\\b" (RegExp/escape (normalize query)) "\\b") .unicode true))
 
 (defn fetch-ines [query]
-  (when (nil? @ines-cache)
-    (let [url (Uri/parse "https://dicionario.ines.gov.br/public/site/js/palavras.js")
-          response (await (http/get url))]
-      (when (= (.-statusCode response) 200)
-        (let [body (.-body response)
-              start (.indexOf body "[")
-              end (.lastIndexOf body "]")]
-          (when (and (not= start -1) (not= end -1))
-            (let [json-str (.substring body start (inc end))]
-              (reset! ines-cache (json/json.decode json-str))))))))
+  (println "fetch-ines starting for query:" query)
+  (try
+    (when (nil? @ines-cache)
+      (let [url (Uri/parse "https://dicionario.ines.gov.br/public/site/js/palavras.js")
+            _ (println "fetch-ines: sending request to" url)
+            response (await (http/get url))]
+        (println "fetch-ines response status:" (.-statusCode response) "body length:" (count (.-body response)))
+        (if (= (.-statusCode response) 200)
+          (let [body (.-body response)
+                start (.indexOf body "[")
+                end (.lastIndexOf body "]")]
+            (when (and (not= start -1) (not= end -1))
+              (let [json-str (.substring body start (inc end))]
+                (reset! ines-cache (json/json.decode json-str)))))
+          (println "!!! INES STATUS CODE:" (.-statusCode response)))))
+    (catch Object e
+      (println "!!! ERROR INES:" e)))
   (if-let [data @ines-cache]
     (let [^RegExp regex (word-bound-regex query)]
-      (->> data
-           (filter (fn [item]
-                     (let [palavra (get item "palavra" "")]
-                       (.hasMatch regex (normalize palavra)))))
-           (map (fn [item]
-                  (let [palavra ^String (get item "palavra")
-                        video ^String (get item "video")
-                        image ^String (get item "image")]
-                    (m/make-dict-item
-                     :title (or palavra "Sem título")
-                     :description (get item "descricao")
-                     :exemplo (get item "exemplo")
-                     :libras (get item "libras")
-                     :video-url (when (and video (not (.-isEmpty video)))
-                                  (str "https://dicionario.ines.gov.br/public/media/palavras/videos/" video))
-                     :image-url (when (and image (not (.-isEmpty image)))
-                                  (str "https://dicionario.ines.gov.br/public/media/palavras/images/" image))
-                     :link (str "https://dicionario.ines.gov.br/pt/search?word=" (Uri/encodeComponent (or palavra "")))
-                     :source "INES"))))))
-    []))
+      (println "fetch-ines: matching query against" (count data) "items")
+      (let [res (->> data
+                     (filter (fn [item]
+                               (let [palavra (get item "palavra" "")]
+                                 (.hasMatch regex (normalize palavra)))))
+                     (map (fn [item]
+                            (let [palavra ^String (get item "palavra")
+                                  video ^String (get item "video")
+                                  image ^String (get item "image")]
+                              (m/make-dict-item
+                               :title (or palavra "Sem título")
+                               :description (get item "descricao")
+                               :exemplo (get item "exemplo")
+                               :libras (get item "libras")
+                               :video-url (when (and video (not (.-isEmpty video)))
+                                            (str "https://dicionario.ines.gov.br/public/media/palavras/videos/" video))
+                               :image-url (when (and image (not (.-isEmpty image)))
+                                            (str "https://dicionario.ines.gov.br/public/media/palavras/images/" image))
+                               :link (str "https://dicionario.ines.gov.br/pt/search?word=" (Uri/encodeComponent (or palavra "")))
+                               :source "INES")))))]
+        (println "fetch-ines found" (count res) "matches")
+        res))
+    (do
+      (println "fetch-ines: ines-cache is nil")
+      [])))
 
 (defn fetch-rede-surdos [query]
-  (let [encoded-query (Uri/encodeQueryComponent query)
-        url (Uri/parse (str "https://redesurdosce.ufc.br/wp-json/wp/v2/posts?search=" encoded-query))
-        response (await (http/get url))]
-    (if (= (.-statusCode response) 200)
-      (let [data (json/json.decode (.-body response))
-            ^RegExp regex (word-bound-regex query)
-            yt-embed-exp (RegExp. "src=\"https:\\/\\/www\\.youtube\\.com\\/embed\\/([^\"?]+)")
-            yt-watch-exp (RegExp. "https:\\/\\/www\\.youtube\\.com\\/watch\\?v=([^\"&\\s]+)")]
-        (->> data
-             (filter (fn [item]
-                       (let [title (get-in item ["title" "rendered"] "")]
-                         (.hasMatch regex (normalize title)))))
-             (map (fn [item]
-                    (let [content (get-in item ["content" "rendered"])
-                          yt-id (or (some-> (.firstMatch yt-embed-exp content) ^RegExpMatch (.group 1))
-                                    (some-> (.firstMatch yt-watch-exp content) ^RegExpMatch (.group 1)))]
-                      (m/make-dict-item
-                       :title (get-in item ["title" "rendered"])
-                       :description (let [excerpt ^String (get-in item ["excerpt" "rendered"] "")]
-                                      (if (.-isEmpty excerpt) content excerpt))
-                       :youtube-id yt-id
-                       :link (get item "link")
-                       :source "RedeSurdos"))))))
+  (println "fetch-rede-surdos starting for query:" query)
+  (try
+    (let [encoded-query (Uri/encodeQueryComponent query)
+          url (Uri/parse (str "https://redesurdosce.ufc.br/wp-json/wp/v2/posts?search=" encoded-query))
+          _ (println "fetch-rede-surdos: sending request to" url)
+          response (await (http/get url))]
+      (println "fetch-rede-surdos response status:" (.-statusCode response) "body length:" (count (.-body response)))
+      (if (= (.-statusCode response) 200)
+        (let [data (json/json.decode (.-body response))
+              ^RegExp regex (word-bound-regex query)
+              yt-embed-exp (RegExp. "src\\s*=\\s*[\"']https:\\/\\/www\\.youtube\\.com\\/embed\\/([^\"'?]+)")
+              yt-watch-exp (RegExp. "https:\\/\\/www\\.youtube\\.com\\/watch\\?v=([^\"&\\s]+)")
+              res (->> data
+                       (filter (fn [item]
+                                 (let [title (get-in item ["title" "rendered"] "")]
+                                   (.hasMatch regex (normalize title)))))
+                       (map (fn [item]
+                              (let [content (get-in item ["content" "rendered"])
+                                    yt-embed-match (.firstMatch yt-embed-exp content)
+                                    yt-watch-match (.firstMatch yt-watch-exp content)
+                                    yt-id (or (when yt-embed-match (.group ^RegExpMatch yt-embed-match 1))
+                                              (when yt-watch-match (.group ^RegExpMatch yt-watch-match 1)))]
+                                (m/make-dict-item
+                                 :title (get-in item ["title" "rendered"])
+                                 :description (let [excerpt ^String (get-in item ["excerpt" "rendered"] "")]
+                                                (if (.-isEmpty excerpt) content excerpt))
+                                 :youtube-id yt-id
+                                 :link (get item "link")
+                                 :source "RedeSurdos")))))]
+          (println "fetch-rede-surdos found" (count res) "matches")
+          res)
+        (do
+          (println "!!! REDESURDOS STATUS CODE:" (.-statusCode response))
+          [])))
+    (catch Object e
+      (println "!!! ERROR REDESURDOS:" e)
       [])))
 
 (defn search-youtube [query]
@@ -92,26 +117,26 @@
       [])))
 
 (defn extract-video-and-youtube-id [content]
-  (let [video-exp (RegExp. "<video[^>]+src=[\"']([^\"']+)[\"']")
-        yt-embed-exp (RegExp. "src=[\"']https:\\/\\/www\\.youtube\\.com\\/embed\\/([^\"'?]+)")
+  (let [video-exp (RegExp. "<video[^>]+src\\s*=\\s*[\"']([^\"']+)[\"']")
+        yt-embed-exp (RegExp. "src\\s*=\\s*[\"']https:\\/\\/www\\.youtube\\.com\\/embed\\/([^\"'?]+)")
         yt-watch-exp (RegExp. "https:\\/\\/www\\.youtube\\.com\\/watch\\?v=([^\"&\\s]+)")
         yt-short-exp (RegExp. "https:\\/\\/youtu\\.be\\/([^\"&\\s<]+)")
-        pb-video-exp (RegExp. "src=[\"'](http[^\"']+?\\.mp4)[\"']")
-        pb-yt-exp (RegExp. "src=[\"'](https:\\/\\/www\\.youtube\\.com\\/watch\\?v=[^\"&]+)[\"']")]
-    (if-let [video-match ^RegExpMatch (.firstMatch video-exp content)]
-      {:video-url (.group video-match 1) :youtube-id nil}
-      (if-let [yt-match ^RegExpMatch (.firstMatch yt-embed-exp content)]
-        {:video-url nil :youtube-id (.group yt-match 1)}
-        (if-let [yt-watch-match ^RegExpMatch (.firstMatch yt-watch-exp content)]
-          {:video-url nil :youtube-id (.group yt-watch-match 1)}
-          (if-let [yt-short-match ^RegExpMatch (.firstMatch yt-short-exp content)]
-            {:video-url nil :youtube-id (.group yt-short-match 1)}
-            (if-let [pb-video-match ^RegExpMatch (.firstMatch pb-video-exp content)]
-              {:video-url (.group pb-video-match 1) :youtube-id nil}
-              (if-let [pb-yt-match ^RegExpMatch (.firstMatch pb-yt-exp content)]
-                {:video-url nil :youtube-id (some->> (.group pb-yt-match 1)
+        pb-video-exp (RegExp. "src\\s*=\\s*[\"'](http[^\"']+?\\.mp4)[\"']")
+        pb-yt-exp (RegExp. "src\\s*=\\s*[\"'](https:\\/\\/www\\.youtube\\.com\\/watch\\?v=[^\"&]+)[\"']")]
+    (if-let [video-match (.firstMatch video-exp content)]
+      {:video-url (.group ^RegExpMatch video-match 1) :youtube-id nil}
+      (if-let [yt-match (.firstMatch yt-embed-exp content)]
+        {:video-url nil :youtube-id (.group ^RegExpMatch yt-match 1)}
+        (if-let [yt-watch-match (.firstMatch yt-watch-exp content)]
+          {:video-url nil :youtube-id (.group ^RegExpMatch yt-watch-match 1)}
+          (if-let [yt-short-match (.firstMatch yt-short-exp content)]
+            {:video-url nil :youtube-id (.group ^RegExpMatch yt-short-match 1)}
+            (if-let [pb-video-match (.firstMatch pb-video-exp content)]
+              {:video-url (.group ^RegExpMatch pb-video-match 1) :youtube-id nil}
+              (if-let [pb-yt-match (.firstMatch pb-yt-exp content)]
+                {:video-url nil :youtube-id (some->> (.group ^RegExpMatch pb-yt-match 1)
                                                      (.firstMatch (RegExp. "watch\\?v=([^\"&\\s]+)"))
-                                                     (fn [^RegExpMatch m] (.group m 1)))}
+                                                     (fn [m] (.group ^RegExpMatch m 1)))}
                 {:video-url nil :youtube-id nil}))))))))
 
 (defn fetch-ufv-detail [url-str title]
@@ -120,57 +145,81 @@
           response (await (http/get url))]
       (when (= (.-statusCode response) 200)
         (let [body (.-body response)
-              video-exp (RegExp. "<video[^>]+src=[\"']([^\"']+)[\"']")
-              video-match ^RegExpMatch (.firstMatch video-exp body)]
-          (when-let [video-url (some-> video-match (.group 1) ^String (.trim))]
-            (when (not (.-isEmpty video-url))
-              (m/make-dict-item
-               :title title
-               :video-url video-url
-               :link url-str
-               :source "UFV"))))))
+              video-exp (RegExp. "<video[^>]+src\\s*=\\s*[\"']([^\"']+)[\"']")
+              video-match (.firstMatch video-exp body)]
+          (when video-match
+            (let [video-url (some-> (.group ^RegExpMatch video-match 1) ^String (.trim))]
+              (when (not (.-isEmpty video-url))
+                (m/make-dict-item
+                 :title title
+                 :video-url video-url
+                 :link url-str
+                 :source "UFV")))))))
     (catch Exception e
       (println "Error fetching UFV detail:" e)
       nil)))
 
 (defn fetch-ufv [query]
-  (let [url (Uri/parse (str "https://sistemas.cead.ufv.br/capes/dicionario/?s=" (Uri/encodeQueryComponent query)))
-        response (await (http/get url))]
-    (if (= (.-statusCode response) 200)
-      (let [body (.-body response)
-            ^RegExp regex (word-bound-regex query)
-            item-exp (RegExp. "<a href=\"([^\"]+)\">(?:\\s*)<h4>([^<]+)</h4>")
-            matches (.allMatches item-exp body)
-            detail-futures (atom [])]
-        (doseq [^RegExpMatch match matches]
-          (let [link (.group match 1)
-                title (some-> (.group match 2) ^String (.trim))]
-            (when (and link title (.hasMatch regex (normalize title)))
-              (swap! detail-futures conj (fetch-ufv-detail link title)))))
-        (let [details (await (Future/wait @detail-futures))]
-          (filter some? details)))
+  (println "fetch-ufv starting for query:" query)
+  (try
+    (let [url (Uri/parse (str "https://sistemas.cead.ufv.br/capes/dicionario/?s=" (Uri/encodeQueryComponent query)))
+          _ (println "fetch-ufv: sending request to" url)
+          response (await (http/get url))]
+      (println "fetch-ufv response status:" (.-statusCode response) "body length:" (count (.-body response)))
+      (if (= (.-statusCode response) 200)
+        (let [body (.-body response)
+              ^RegExp regex (word-bound-regex query)
+              item-exp (RegExp. "<a href=\"([^\"]+)\">(?:\\s*)<h4>([^<]+)</h4>")
+              matches (.allMatches item-exp body)
+              detail-futures (atom [])]
+          (doseq [^RegExpMatch match matches]
+            (let [link (.group match 1)
+                  title (some-> (.group match 2) ^String (.trim))]
+              (when (and link title (.hasMatch regex (normalize title)))
+                (swap! detail-futures conj (fetch-ufv-detail link title)))))
+          (println "fetch-ufv: fetching" (count @detail-futures) "details")
+          (let [details (await (Future/wait @detail-futures))
+                res (filter some? details)]
+            (println "fetch-ufv found" (count res) "matches")
+            res))
+        (do
+          (println "!!! UFV STATUS CODE:" (.-statusCode response))
+          [])))
+    (catch Object e
+      (println "!!! ERROR UFV:" e)
       [])))
 
 (defn fetch-libras-academica-uff [query]
-  (let [url (Uri/parse (str "https://librasacademica.uff.br/wp-json/wp/v2/posts?search=" (Uri/encodeQueryComponent query)))
-        response (await (http/get url))]
-    (if (= (.-statusCode response) 200)
-      (let [data (json/json.decode (.-body response))
-            ^RegExp regex (word-bound-regex query)]
-        (->> data
-             (filter (fn [item]
-                       (let [title (get-in item ["title" "rendered"] "")]
-                         (.hasMatch regex (normalize title)))))
-             (map (fn [item]
-                    (let [content (get-in item ["content" "rendered"] "")
-                          extraction (extract-video-and-youtube-id content)]
-                      (m/make-dict-item
-                       :title (get-in item ["title" "rendered"])
-                       :description (get-in item ["excerpt" "rendered"])
-                       :video-url (:video-url extraction)
-                       :youtube-id (:youtube-id extraction)
-                       :link (get item "link")
-                       :source "LibrasAcademicaUFF"))))))
+  (println "fetch-libras-academica-uff starting for query:" query)
+  (try
+    (let [url (Uri/parse (str "https://librasacademica.uff.br/wp-json/wp/v2/posts?search=" (Uri/encodeQueryComponent query)))
+          _ (println "fetch-libras-academica-uff: sending request to" url)
+          response (await (http/get url))]
+      (println "fetch-libras-academica-uff response status:" (.-statusCode response) "body length:" (count (.-body response)))
+      (if (= (.-statusCode response) 200)
+        (let [data (json/json.decode (.-body response))
+              ^RegExp regex (word-bound-regex query)
+              res (->> data
+                       (filter (fn [item]
+                                 (let [title (get-in item ["title" "rendered"] "")]
+                                   (.hasMatch regex (normalize title)))))
+                       (map (fn [item]
+                              (let [content (get-in item ["content" "rendered"] "")
+                                    extraction (extract-video-and-youtube-id content)]
+                                (m/make-dict-item
+                                 :title (get-in item ["title" "rendered"])
+                                 :description (get-in item ["excerpt" "rendered"])
+                                 :video-url (:video-url extraction)
+                                 :youtube-id (:youtube-id extraction)
+                                 :link (get item "link")
+                                 :source "LibrasAcademicaUFF")))))]
+          (println "fetch-libras-academica-uff found" (count res) "matches")
+          res)
+        (do
+          (println "!!! LIBRASACADEMICAUFF STATUS CODE:" (.-statusCode response))
+          [])))
+    (catch Object e
+      (println "!!! ERROR LIBRASACADEMICAUFF:" e)
       [])))
 
 (defn fetch-spread-the-sign-detail [url-str title]
@@ -179,39 +228,45 @@
           response (await (http/get url .headers {"User-Agent" "Mozilla/5.0"}))]
       (when (= (.-statusCode response) 200)
         (let [body (.-body response)
-              video-exp (RegExp. "<video[^>]*src=[\"'](https:\\/\\/media\\.spreadthesign\\.com\\/video\\/mp4\\/[^\"']+)[\"']")
-              video-match ^RegExpMatch (.firstMatch video-exp body)]
-          (when-let [video-url (some-> video-match (.group 1))]
-            (m/make-dict-item
-             :title title
-             :video-url video-url
-             :link url-str
-             :source "SpreadTheSign")))))
+              video-exp (RegExp. "<video[^>]*src\\s*=\\s*[\"'](https:\\/\\/media\\.spreadthesign\\.com\\/video\\/mp4\\/[^\"']+)[\"']")
+              video-match (.firstMatch video-exp body)]
+          (when video-match
+            (let [video-url (.group ^RegExpMatch video-match 1)]
+              (m/make-dict-item
+               :title title
+               :video-url video-url
+               :link url-str
+               :source "SpreadTheSign"))))))
     (catch Exception e
       (println "Error fetching SpreadTheSign detail:" e)
       nil)))
 
 (defn fetch-spread-the-sign [query]
+  (println "fetch-spread-the-sign starting for query:" query)
   (try
     (let [url (Uri/parse (str "https://www.spreadthesign.com/pt.br/search/?q=" (Uri/encodeQueryComponent query)))
+          _ (println "fetch-spread-the-sign: sending request to" url)
           response (await (http/get url .headers {"User-Agent" "Mozilla/5.0"}))]
+      (println "fetch-spread-the-sign response status:" (.-statusCode response) "body length:" (count (.-body response)))
       (if (= (.-statusCode response) 200)
         (let [body (.-body response)
               ^RegExp regex (word-bound-regex query)
-              video-exp (RegExp. "<video[^>]*src=[\"'](https:\\/\\/media\\.spreadthesign\\.com\\/video\\/mp4\\/[^\"']+)[\"']")
-              video-match ^RegExpMatch (.firstMatch video-exp body)
+              video-exp (RegExp. "<video[^>]*src\\s*=\\s*[\"'](https:\\/\\/media\\.spreadthesign\\.com\\/video\\/mp4\\/[^\"']+)[\"']")
+              video-match (.firstMatch video-exp body)
               results (atom [])]
-          (when-let [video-url (some-> video-match (.group 1))]
-            (let [title-exp (RegExp. "<span class=\"flag-icon flag-icon-br bordered\"><\\/span>\\s*([^<\n]+)")
-                  title-match ^RegExpMatch (.firstMatch title-exp body)]
-              (when-let [title (some-> title-match (.group 1) ^String (.trim))]
-                (when (.hasMatch regex (normalize title))
-                  (swap! results conj
-                         (m/make-dict-item
-                          :title title
-                          :video-url video-url
-                          :link (str url)
-                          :source "SpreadTheSign"))))))
+          (when video-match
+            (let [video-url (.group ^RegExpMatch video-match 1)
+                  title-exp (RegExp. "<span class=\"flag-icon flag-icon-br bordered\"><\\/span>\\s*([^<\n]+)")
+                  title-match (.firstMatch title-exp body)]
+              (when title-match
+                (let [title (^String .trim (.group ^RegExpMatch title-match 1))]
+                  (when (.hasMatch regex (normalize title))
+                    (swap! results conj
+                           (m/make-dict-item
+                            :title title
+                            :video-url video-url
+                            :link (str url)
+                            :source "SpreadTheSign")))))))
           (let [result-exp (RegExp. "<div class=\"search-result-title\">\\s*<a href=\"(\\/pt\\.br\\/word\\/[^\"]+)\"[^>]*>\\s*([^<\n]+)")
                 matches (.allMatches result-exp body)
                 detail-futures (atom [])]
@@ -220,15 +275,19 @@
                     title (some-> (.group match 2) ^String (.trim))]
                 (when (and link title (.hasMatch regex (normalize title)))
                   (swap! detail-futures conj (fetch-spread-the-sign-detail (str "https://www.spreadthesign.com" link) title)))))
+            (println "fetch-spread-the-sign: fetching" (count @detail-futures) "details")
             (let [details (await (Future/wait @detail-futures))
                   valid-details (filter some? details)]
               (doseq [item valid-details]
                 (when-not (some (fn [r] (= (:video-url r) (:video-url item))) @results)
                   (swap! results conj item)))
+              (println "fetch-spread-the-sign found" (count @results) "matches")
               @results)))
-        []))
-    (catch Exception e
-      (println "Error searching SpreadTheSign:" e)
+        (do
+          (println "!!! SPREADTHESIGN STATUS CODE:" (.-statusCode response))
+          [])))
+    (catch Object e
+      (println "!!! ERROR SPREADTHESIGN:" e)
       [])))
 
 (defn search-all [query & {:keys [source] :or {source "Ambos"}}]
@@ -247,5 +306,5 @@
 
                   (or (= source "Ambos") (= source "SpreadTheSign"))
                   (conj (fetch-spread-the-sign query)))]
-    (let [results-list (await (Future.wait futures))]
-      (flatten results-list))))
+    (let [results-list (await (Future/wait futures))]
+      (apply concat results-list))))

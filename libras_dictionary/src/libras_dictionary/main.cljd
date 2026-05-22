@@ -45,7 +45,9 @@
         share-min (or (.getBool p "is_share_minimal") false)]
     (swap! app-state assoc
            :theme-mode (if is-dark mat.ThemeMode/dark mat.ThemeMode/light)
-           :enabled-sources (if enabled-sources (set (seq enabled-sources)) #{"INES" "UFV" "RedeSurdos" "LibrasAcademicaUFF" "SpreadTheSign"})
+           :enabled-sources (if (and enabled-sources (not (empty? enabled-sources)))
+                              (set (seq enabled-sources))
+                              #{"INES" "UFV" "RedeSurdos" "LibrasAcademicaUFF" "SpreadTheSign"})
            :auto-youtube-search auto-yt
            :is-share-minimal share-min
            :active-filters #{"Ambos"})))
@@ -53,22 +55,41 @@
 (defn toggle-theme! []
   (let [new-mode (if (= (:theme-mode @app-state) mat.ThemeMode/light) mat.ThemeMode/dark mat.ThemeMode/light)]
     (swap! app-state assoc :theme-mode new-mode)
-    (let [p (await (prefs.SharedPreferences/getInstance))]
-      (.setBool p "isDark" (= new-mode mat.ThemeMode/dark)))))
+    (-> (prefs.SharedPreferences/getInstance)
+        (.then (fn [p]
+                 (.setBool ^prefs/SharedPreferences p "isDark" (= new-mode mat.ThemeMode/dark)))))
+    nil))
 
 (defn perform-youtube-search! [query]
   (when-not (str/blank? query)
     (swap! app-state assoc :is-loading true :is-youtube-search true :search-results [])
-    (let [results (await (api/search-youtube query))]
-      (swap! app-state assoc :search-results results :is-loading false))))
+    (try
+      (println "=== START YOUTUBE SEARCH ===" query)
+      (let [results (await (api/search-youtube query))]
+        (println "=== YOUTUBE SEARCH RESULTS ===" (count results))
+        (swap! app-state assoc :search-results results :is-loading false))
+      (catch Exception e
+        (println "Error searching YouTube:" e)
+        (swap! app-state assoc :is-loading false)))))
 
 (defn perform-search! [query]
   (when-not (str/blank? query)
     (swap! app-state assoc :is-loading true :is-youtube-search false :search-results [])
-    (let [results (await (api/search-all query))]
-      (if (and (empty? results) (:auto-youtube-search @app-state))
-        (await (perform-youtube-search! query))
-        (swap! app-state assoc :search-results results :is-loading false)))))
+    (try
+      (println "=== START DICTIONARY SEARCH ===" query)
+      (println "Enabled sources on search:" (:enabled-sources @app-state))
+      (let [results (await (api/search-all query))]
+        (println "=== DICTIONARY SEARCH RESULTS ===" (count results))
+        (doseq [r results]
+          (println "  - Title:" (:title r) "Source:" (:source r)))
+        (if (and (empty? results) (:auto-youtube-search @app-state))
+          (do
+            (println "No results found. Auto YouTube search is active, searching YouTube...")
+            (await (perform-youtube-search! query)))
+          (swap! app-state assoc :search-results results :is-loading false)))
+      (catch Exception e
+        (println "Error performing search:" e)
+        (swap! app-state assoc :is-loading false)))))
 
 (defn on-filter-changed! [filter-name selected]
   (swap! app-state
@@ -111,7 +132,9 @@
            [(mat/Text. name .style (mat/TextStyle. .fontWeight mat.FontWeight/bold))
             (mat/Text. org .style (mat/TextStyle. .fontSize 12))
             (mat/InkWell.
-             .onTap (fn [] (launch-url! url))
+             .onTap (fn []
+                      (launch-url! url)
+                      nil)
              .child (mat/Text. url .style (mat/TextStyle. .color mat.Colors/blue .fontSize 12)))
             (mat/Text. copyright .style (mat/TextStyle. .fontSize 11 .fontStyle mat.FontStyle/italic))
             (mat/SizedBox. .height 8)])))
@@ -119,52 +142,49 @@
 ;; --- Video Widgets ---
 (defn youtube-player-widget [youtube-id]
   (f/widget
-   :watch [replaying-val (atom false) :as replaying?
-           controller-val (atom nil) :as controller-atom]
-   :let [listener (fn []
-                    (when-let [^yt-p/YoutubePlayerController c @controller-atom]
-                      (let [value ^yt-p/YoutubePlayerValue (.-value c)]
-                        (when (.-isReady value)
-                          (let [position ^Duration (.-position value)
-                                duration ^Duration (-> value .-metaData .-duration)]
-                            (if (and (> (.-inMilliseconds duration) 0)
-                                     (>= (.-inMilliseconds position) (- (.-inMilliseconds duration) 300))
-                                     (not @replaying?))
-                              (do
-                                (reset! replaying? true)
-                                (.seekTo c (Duration. .seconds 0))
-                                (Future/delayed (Duration. .milliseconds 600)
-                                                (fn [] (reset! replaying? false))))
-                              (when (and (= (.-playerState value) yt-p.PlayerState/ended)
-                                         (not @replaying?))
-                                (reset! replaying? true)
-                                (.seekTo c (Duration. .seconds 0))
-                                (.play c)
-                                (Future/delayed (Duration. .milliseconds 600)
-                                                (fn [] (reset! replaying? false))))))))))]
-   :managed [^yt-p/YoutubePlayerController controller
-             (let [c (yt-p/YoutubePlayerController.
-                      .initialVideoId youtube-id
-                      .flags (yt-p/YoutubePlayerFlags.
-                              .autoPlay true
-                              .mute false
-                              .loop false
-                              .hideControls true
-                              .hideThumbnail true
-                              .controlsVisibleAtStart false
-                              .disableDragSeek true))]
-               (reset! controller-atom c)
-               (.addListener c listener)
-               c)
-             :dispose ((fn [^yt-p/YoutubePlayerController c]
-                         (.removeListener c listener)
-                         (.dispose c)))]
-   (mat/IgnorePointer.
-    .child (yt-p/YoutubePlayer.
-            .controller controller
-            .showVideoProgressIndicator false
-            .bottomActions []
-            .topActions []))))
+   :managed [player-state
+             (let [replaying? (atom false)
+                   controller (yt-p/YoutubePlayerController.
+                               .initialVideoId youtube-id
+                               .flags (yt-p/YoutubePlayerFlags.
+                                       .autoPlay true
+                                       .mute false
+                                       .loop false
+                                       .hideControls false
+                                       .hideThumbnail true
+                                       .controlsVisibleAtStart true
+                                       .disableDragSeek true))
+                   listener (fn []
+                              (let [value ^yt-p/YoutubePlayerValue (.-value controller)]
+                                (when (.-isReady value)
+                                  (let [position ^Duration (.-position value)
+                                        duration ^Duration (-> value .-metaData .-duration)]
+                                    (if (and (> (.-inMilliseconds duration) 0)
+                                             (>= (.-inMilliseconds position) (- (.-inMilliseconds duration) 300))
+                                             (not @replaying?))
+                                      (do
+                                        (reset! replaying? true)
+                                        (.seekTo controller (Duration. .seconds 0))
+                                        (Future/delayed (Duration. .milliseconds 600)
+                                                        (fn [] (reset! replaying? false))))
+                                      (when (and (= (.-playerState value) yt-p.PlayerState/ended)
+                                                 (not @replaying?))
+                                        (reset! replaying? true)
+                                        (.seekTo controller (Duration. .seconds 0))
+                                        (.play controller)
+                                        (Future/delayed (Duration. .milliseconds 600)
+                                                        (fn [] (reset! replaying? false)))))))))]
+               (.addListener controller listener)
+               {:controller controller :listener listener})
+             :refresh-on youtube-id
+             :dispose ((fn [state]
+                         (let [c (:controller state)
+                               l (:listener state)]
+                           (.removeListener ^yt-p/YoutubePlayerController c l)
+                           (.dispose ^yt-p/YoutubePlayerController c))))]
+   (yt-p/YoutubePlayer.
+    .controller (:controller player-state)
+    .showVideoProgressIndicator true)))
 
 (defn chewie-video-widget [video-url]
   (f/widget
@@ -258,7 +278,8 @@
                                          (let [share-text (if (:is-share-minimal @app-state)
                                                             (str (:title item) ": " (:link item))
                                                             (str "Veja este sinal de Libras para \"" (:title item) "\": " (:link item)))]
-                                           (share! share-text (str "Sinal de Libras: " (:title item)))))))
+                                           (share! share-text (str "Sinal de Libras: " (:title item)))
+                                           nil))))
                                 true
                                 (conj (mat/Icon. (if is-expanded mat.Icons/expand_less mat.Icons/expand_more) .color mat.Colors/white)))))
                      (if is-expanded
@@ -357,18 +378,20 @@
                .value auto-youtube-search
                .onChanged (fn [val]
                             (swap! app-state assoc :auto-youtube-search val)
-                            (let [p (await (prefs.SharedPreferences/getInstance))]
-                              (await (.setBool p "auto_youtube_search" val))
-                              (identity nil))))
+                            (-> (prefs.SharedPreferences/getInstance)
+                                (.then (fn [p]
+                                         (.setBool ^prefs/SharedPreferences p "auto_youtube_search" val))))
+                            nil))
               (mat/SwitchListTile.
                .title (mat/Text. "Texto de compartilhamento mínimo")
                .subtitle (mat/Text. "Envia apenas a palavra e o link ao compartilhar")
                .value is-share-minimal
                .onChanged (fn [val]
                             (swap! app-state assoc :is-share-minimal val)
-                            (let [p (await (prefs.SharedPreferences/getInstance))]
-                              (await (.setBool p "is_share_minimal" val))
-                              (identity nil))))
+                            (-> (prefs.SharedPreferences/getInstance)
+                                (.then (fn [p]
+                                         (.setBool ^prefs/SharedPreferences p "is_share_minimal" val))))
+                            nil))
               (mat/Divider.)
               (mat/ListTile.
                .title (mat/Text. "Fontes de Pesquisa" .style (mat/TextStyle. .fontWeight mat.FontWeight/bold))
@@ -378,17 +401,24 @@
                .children
                (map
                 (fn [source]
-                  (mat/CheckboxListTile.
+                  (mat/SwitchListTile.
                    .title (mat/Text. (get source-labels source source))
                    .value (contains? enabled-sources source)
+                   .secondary (mat/Container.
+                               .width 24
+                               .height 24
+                               .decoration (mat/BoxDecoration.
+                                            .color (get-source-color source)
+                                            .shape mat.BoxShape/circle))
                    .onChanged (fn [val]
                                 (let [new-sources (if val
                                                     (conj enabled-sources source)
                                                     (disj enabled-sources source))]
                                   (swap! app-state assoc :enabled-sources new-sources)
-                                  (let [p (await (prefs.SharedPreferences/getInstance))]
-                                    (await (.setStringList p "enabled_sources" (vec new-sources)))
-                                    (identity nil))))))
+                                  (-> (prefs.SharedPreferences/getInstance)
+                                      (.then (fn [p]
+                                               (.setStringList ^prefs/SharedPreferences p "enabled_sources" (vec new-sources)))))
+                                  nil))))
                 ["INES" "UFV" "RedeSurdos" "LibrasAcademicaUFF" "SpreadTheSign"]))
               (mat/Divider.)
               (mat/ListTile.
@@ -410,7 +440,9 @@
                        [(mat/Text. "Este projeto é de domínio público (CC0).")
                         (mat/SizedBox. .height 8)
                         (mat/InkWell.
-                         .onTap (fn [] (launch-url! "https://github.com/3duardobn/libras_dicionario"))
+                         .onTap (fn []
+                                  (launch-url! "https://github.com/3duardobn/libras_dicionario")
+                                  nil)
                          .child (mat/Text. "Repositório no GitHub" .style (mat/TextStyle. .color mat.Colors/blue .decoration mat.TextDecoration/underline)))
                         (mat/SizedBox. .height 16)]))
               (mat/Divider.)])))))
@@ -420,6 +452,7 @@
    :context ctx
    :watch [state app-state]
    (let [{:keys [theme-mode is-loading search-results search-query active-filters enabled-sources is-youtube-search]} state
+         is-dark? (= theme-mode mat.ThemeMode/dark)
          display-results (vec
                           (cond
                             is-youtube-search
@@ -435,106 +468,137 @@
       .appBar (mat/AppBar.
                .title (mat/Text. "Dicionário Libras")
                .actions [(mat/IconButton.
-                          .icon (mat/Icon. (if (= theme-mode mat.ThemeMode/dark) mat.Icons/light_mode mat.Icons/dark_mode))
-                          .onPressed toggle-theme!)
+                          .icon (mat/Icon. (if is-dark? mat.Icons/light_mode mat.Icons/dark_mode))
+                          .onPressed (fn []
+                                       (toggle-theme!)
+                                       nil))
                          (mat/IconButton.
                           .icon (mat/Icon. mat.Icons/settings)
                           .onPressed (fn []
-                                       (identity
-                                        (mat/Navigator.push
-                                         ctx
-                                         (mat/MaterialPageRoute. .builder (fn [ctx] (settings-screen)))))))])
+                                       (mat/Navigator.push
+                                        ctx
+                                        (mat/MaterialPageRoute. .builder (fn [ctx] (settings-screen))))
+                                       nil))])
       .floatingActionButton (mat/FloatingActionButton.
-                             .onPressed (fn [] (perform-youtube-search! search-query))
-                             .backgroundColor mat.Colors/red
+                             .onPressed (fn []
+                                          (perform-youtube-search! search-query)
+                                          nil)
+                             .backgroundColor (mat/Color. 0xFF1565C0)
                              .child (mat/Icon. mat.Icons/play_circle_filled .color mat.Colors/white .size 36)
                              .tooltip "Buscar no YouTube")
       .body (mat/Column.
              .children
-             [(mat/Padding.
-                .padding (mat/EdgeInsets.all 16)
-                .child (mat/Row.
-                        .children
-                        [(mat/Expanded.
-                          .child (mat/TextField.
-                                  .decoration (mat/InputDecoration. .labelText "Pesquisar (Português)" .border (mat/OutlineInputBorder.))
-                                  .onChanged #(swap! app-state assoc :search-query %)
-                                  .onSubmitted perform-search!))
-                         (mat/SizedBox. .width 8)
-                         (mat/ElevatedButton.
-                          .onPressed #(perform-search! search-query)
-                          .child (mat/Text. "Buscar"))]))
-              (when-not is-youtube-search
-                (mat/Padding.
-                 .padding (mat/EdgeInsets.symmetric .horizontal 16.0 .vertical 8.0)
-                 .child
-                 (mat/Wrap.
-                  .spacing 8.0
-                  .runSpacing 8.0
-                  .alignment mat.WrapAlignment/center
-                  .children
-                  (into
-                   [(let [is-selected? (contains? active-filters "Ambos")]
-                      (mat/FilterChip.
-                       .label (mat/AnimatedSize.
-                               .duration (Duration. .milliseconds 250)
-                               .curve mat.Curves/easeInOut
-                               .child (mat/Row.
-                                       .mainAxisSize mat.MainAxisSize/min
-                                       .children
-                                       (cond-> []
-                                         is-selected?
-                                         (conj (mat/Padding.
-                                                .padding (mat/EdgeInsets.only .right 4.0)
-                                                .child (mat/Icon. mat.Icons/check .size 14)))
-                                         true
-                                         (conj (mat/Text. "Todos" .style (mat/TextStyle. .fontSize 13 .fontWeight mat.FontWeight/bold))))))
-                       .selected is-selected?
-                       .onSelected (fn [val] (on-filter-changed! "Ambos" val))
-                       .showCheckmark false
-                       .elevation 1
-                       .pressElevation 2
-                       .visualDensity mat.VisualDensity/compact
-                       .padding (mat/EdgeInsets.symmetric .horizontal 4.0)))]
-                   (map
-                    (fn [source]
-                      (let [is-selected? (contains? active-filters source)
-                            display-label (case source
-                                            "RedeSurdos" "Rede Surdos"
-                                            "LibrasAcademicaUFF" "Libras Acadêmica"
-                                            source)]
+             (remove nil?
+               [(mat/Padding.
+                  .padding (mat/EdgeInsets.all 16)
+                  .child (mat/Row.
+                          .children
+                          [(mat/Expanded.
+                            .child (mat/TextField.
+                                    .decoration (mat/InputDecoration. .labelText "Pesquisar (Português)" .border (mat/OutlineInputBorder.))
+                                    .onChanged #(swap! app-state assoc :search-query %)
+                                    .onSubmitted (fn [val]
+                                                   (perform-search! val)
+                                                   nil)))
+                           (mat/SizedBox. .width 8)
+                           (mat/ElevatedButton.
+                            .onPressed (fn []
+                                         (perform-search! search-query)
+                                         nil)
+                            .child (mat/Text. "Buscar"))]))
+                (when-not is-youtube-search
+                  (mat/Padding.
+                   .padding (mat/EdgeInsets.symmetric .horizontal 16.0 .vertical 8.0)
+                   .child
+                   (mat/Wrap.
+                    .spacing 8.0
+                    .runSpacing 8.0
+                    .alignment mat.WrapAlignment/center
+                    .children
+                    (into
+                     [(let [is-selected? (contains? active-filters "Ambos")]
                         (mat/FilterChip.
-                         .label (mat/AnimatedSize.
-                                 .duration (Duration. .milliseconds 250)
-                                 .curve mat.Curves/easeInOut
-                                 .child (mat/Row.
-                                         .mainAxisSize mat.MainAxisSize/min
-                                         .children
-                                         (cond-> []
-                                           is-selected?
-                                           (conj (mat/Padding.
-                                                  .padding (mat/EdgeInsets.only .right 4.0)
-                                                  .child (mat/Icon. mat.Icons/check .size 14)))
-                                           true
-                                           (conj (mat/Text. display-label .style (mat/TextStyle. .fontSize 13))))))
+                         .label (mat/Text. "Todos"
+                                           .style (mat/TextStyle.
+                                                   .fontSize 13
+                                                   .fontWeight mat.FontWeight/bold
+                                                   .color (if is-selected? mat.Colors/white (if is-dark? mat.Colors/white (mat/Color. 0xFF1C1B1F)))))
                          .selected is-selected?
-                         .onSelected (fn [val] (on-filter-changed! source val))
+                         .onSelected (fn [val]
+                                       (on-filter-changed! "Ambos" val)
+                                       nil)
                          .showCheckmark false
-                         .selectedColor (.withOpacity ^mat/Color (get-source-color source) 0.2)
-                         .checkmarkColor (get-source-color source)
+                         .selectedColor (.-shade600 mat.Colors/blue)
+                         .backgroundColor (.withOpacity (.-shade600 mat.Colors/grey) 0.2)
+                         .shape (mat/RoundedRectangleBorder. .borderRadius (mat/BorderRadius.circular 8))
                          .elevation 1
                          .pressElevation 2
                          .visualDensity mat.VisualDensity/compact
-                         .padding (mat/EdgeInsets.symmetric .horizontal 4.0))))
-                    (sort (seq enabled-sources)))))))
-              (if is-loading
-                (mat/LinearProgressIndicator.)
-                (mat/SizedBox.shrink))
-              (mat/Expanded.
-               .child (mat/ListView.builder
-                       .itemCount (count display-results)
-                       .itemBuilder (fn [ctx idx]
-                                      (dictionary-item-card (get display-results idx)))))])))))
+                         .padding (mat/EdgeInsets.symmetric .horizontal 4.0)))]
+                     (map
+                      (fn [source]
+                        (let [is-selected? (contains? active-filters source)
+                              display-label (case source
+                                              "RedeSurdos" "Rede Surdos"
+                                              "LibrasAcademicaUFF" "Libras Acadêmica"
+                                              source)]
+                          (mat/FilterChip.
+                           .label (mat/Text. display-label
+                                              .style (mat/TextStyle.
+                                                      .fontSize 13
+                                                      .color (if is-selected? mat.Colors/white (if is-dark? mat.Colors/white (mat/Color. 0xFF1C1B1F)))))
+                           .selected is-selected?
+                           .onSelected (fn [val]
+                                         (on-filter-changed! source val)
+                                         nil)
+                           .showCheckmark false
+                           .selectedColor (get-source-color source)
+                           .backgroundColor (.withOpacity (.-shade600 mat.Colors/grey) 0.2)
+                           .shape (mat/RoundedRectangleBorder. .borderRadius (mat/BorderRadius.circular 8))
+                           .elevation 1
+                           .pressElevation 2
+                           .visualDensity mat.VisualDensity/compact
+                           .padding (mat/EdgeInsets.symmetric .horizontal 4.0))))
+                      (sort (seq enabled-sources)))))))
+                (if is-loading
+                  (mat/LinearProgressIndicator.)
+                  (mat/SizedBox.shrink))
+                (mat/Expanded.
+                 .child (if (and (empty? display-results) (not is-loading))
+                          (mat/Center.
+                           .child (mat/Padding.
+                                   .padding (mat/EdgeInsets.all 32.0)
+                                   .child (mat/Column.
+                                           .mainAxisAlignment mat.MainAxisAlignment/center
+                                           .crossAxisAlignment mat.CrossAxisAlignment/center
+                                           .children
+                                           (remove nil?
+                                             [(mat/Icon. (if (str/blank? search-query) mat.Icons/search mat.Icons/search_off)
+                                                         .size 64
+                                                         .color (.-shade400 mat.Colors/grey))
+                                              (mat/SizedBox. .height 16)
+                                              (mat/Text.
+                                               (if (str/blank? search-query)
+                                                 "Digite uma palavra acima para pesquisar"
+                                                 (str "Nenhum resultado encontrado para \"" search-query "\""))
+                                               .style (mat/TextStyle.
+                                                       .fontSize 16
+                                                       .fontWeight mat.FontWeight/w500
+                                                       .color (.-shade600 mat.Colors/grey))
+                                               .textAlign mat.TextAlign/center)
+                                              (when (and (not (str/blank? search-query)) (not is-youtube-search))
+                                                (mat/Padding.
+                                                 .padding (mat/EdgeInsets.only .top 8.0)
+                                                 .child (mat/Text.
+                                                         "Tente pesquisar no YouTube tocando no botão azul no canto inferior direito."
+                                                         .style (mat/TextStyle.
+                                                                 .fontSize 14
+                                                                 .color (.-shade500 mat.Colors/grey))
+                                                         .textAlign mat.TextAlign/center)))]))))
+                          (mat/ListView.builder
+                           .itemCount (count display-results)
+                           .itemBuilder (fn [ctx idx]
+                                          (dictionary-item-card (get display-results idx))))))]))))))
 
 (defn splash-screen []
   (f/widget
@@ -595,7 +659,7 @@
     .themeMode (:theme-mode state)
     .theme (mat/ThemeData. .useMaterial3 true .brightness mat.Brightness/light .colorScheme (mat.ColorScheme/fromSeed .seedColor mat.Colors/blue))
     .darkTheme (mat/ThemeData. .useMaterial3 true .brightness mat.Brightness/dark .colorScheme (mat.ColorScheme/fromSeed .seedColor mat.Colors/blue .brightness mat.Brightness/dark))
-    .home (splash-screen))))
+    .home (home-page))))
 
 (defn main []
   (mat.WidgetsFlutterBinding/ensureInitialized)
