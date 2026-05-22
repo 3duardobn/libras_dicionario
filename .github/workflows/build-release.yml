@@ -29,24 +29,44 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Get dependencies
+      - name: Install Clojure CLI
+        uses: DeLaGuardo/setup-clojure@13
+        with:
+          cli: latest
+
+      - name: Cache Clojure deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+          key: clojure-${{ hashFiles('libras_dictionary/deps.edn') }}
+          restore-keys: clojure-
+
+      - name: Get Flutter dependencies
         working-directory: libras_dictionary
         run: flutter pub get
 
+      - name: Compile ClojureDart → Dart
+        working-directory: libras_dictionary
+        run: clj -M:cljd compile
+
       - name: Build APK
         working-directory: libras_dictionary
-        run: flutter build apk --release
+        run: flutter build apk --release --split-per-abi
 
-      - name: Rename APK
+      - name: Stage release artifacts
         run: |
           VERSION="${GITHUB_REF_NAME}"
-          cp libras_dictionary/build/app/outputs/flutter-apk/app-release.apk \
-             libras_dicionario-${VERSION}.apk
+          for apk in libras_dictionary/build/app/outputs/flutter-apk/app-*-release.apk; do
+            arch=$(basename "$apk" | sed 's/app-\(.*\)-release.apk/\1/')
+            cp "$apk" "libras_dicionario-${VERSION}-${arch}.apk"
+          done
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: libras_dicionario-${{ github.ref_name }}.apk
+          files: libras_dicionario-${{ github.ref_name }}-*.apk
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
