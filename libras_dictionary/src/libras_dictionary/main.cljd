@@ -22,6 +22,7 @@
     :is-loading false
     :is-youtube-search false
     :search-results []
+    :error-message nil
     :enabled-sources #{"INES" "UFV" "RedeSurdos" "LibrasAcademicaUFF" "SpreadTheSign"}
     :active-filters #{"Ambos"}
     :auto-youtube-search false
@@ -62,7 +63,7 @@
 
 (defn perform-youtube-search! [query]
   (when-not (str/blank? query)
-    (swap! app-state assoc :is-loading true :is-youtube-search true :search-results [])
+    (swap! app-state assoc :is-loading true :is-youtube-search true :search-results [] :error-message nil)
     (try
       (println "=== START YOUTUBE SEARCH ===" query)
       (let [results (await (api/search-youtube query))]
@@ -70,11 +71,11 @@
         (swap! app-state assoc :search-results results :is-loading false))
       (catch Exception e
         (println "Error searching YouTube:" e)
-        (swap! app-state assoc :is-loading false)))))
+        (swap! app-state assoc :is-loading false :error-message "Não foi possível completar a busca. Verifique sua conexão e tente novamente.")))))
 
 (defn perform-search! [query]
   (when-not (str/blank? query)
-    (swap! app-state assoc :is-loading true :is-youtube-search false :search-results [])
+    (swap! app-state assoc :is-loading true :is-youtube-search false :search-results [] :error-message nil)
     (try
       (println "=== START DICTIONARY SEARCH ===" query)
       (println "Enabled sources on search:" (:enabled-sources @app-state))
@@ -89,7 +90,7 @@
           (swap! app-state assoc :search-results results :is-loading false)))
       (catch Exception e
         (println "Error performing search:" e)
-        (swap! app-state assoc :is-loading false)))))
+        (swap! app-state assoc :is-loading false :error-message "Não foi possível completar a busca. Verifique sua conexão e tente novamente.")))))
 
 (defn on-filter-changed! [filter-name selected]
   (swap! app-state
@@ -135,7 +136,7 @@
              .onTap (fn []
                       (launch-url! url)
                       nil)
-             .child (mat/Text. url .style (mat/TextStyle. .color mat.Colors/blue .fontSize 12)))
+             .child (mat/Text. url .style (mat/TextStyle. .color (mat/Color. 0xFF1565C0) .fontSize 12)))
             (mat/Text. copyright .style (mat/TextStyle. .fontSize 11 .fontStyle mat.FontStyle/italic))
             (mat/SizedBox. .height 8)])))
 
@@ -147,7 +148,7 @@
                    controller (yt-p/YoutubePlayerController.
                                .initialVideoId youtube-id
                                .flags (yt-p/YoutubePlayerFlags.
-                                       .autoPlay true
+                                       .autoPlay false
                                        .mute false
                                        .loop false
                                        .hideControls false
@@ -368,7 +369,7 @@
                         "LibrasAcademicaUFF" "Libras Acadêmica (UFF)"
                         "SpreadTheSign" "SpreadTheSign"}]
      (mat/Scaffold.
-      .appBar (mat/AppBar. .title (mat/Text. "Opções"))
+      .appBar (mat/AppBar. .title (mat/Text. "Configurações"))
       .body (mat/ListView.
              .children
              [(mat/ListTile. .title (mat/Text. "Configurações de Busca" .style (mat/TextStyle. .fontWeight mat.FontWeight/bold)))
@@ -443,15 +444,18 @@
                          .onTap (fn []
                                   (launch-url! "https://github.com/3duardobn/libras_dicionario")
                                   nil)
-                         .child (mat/Text. "Repositório no GitHub" .style (mat/TextStyle. .color mat.Colors/blue .decoration mat.TextDecoration/underline)))
+                         .child (mat/Text. "Repositório no GitHub" .style (mat/TextStyle. .color (mat/Color. 0xFF1565C0) .decoration mat.TextDecoration/underline)))
                         (mat/SizedBox. .height 16)]))
               (mat/Divider.)])))))
 
 (defn home-page []
   (f/widget
    :context ctx
+   :managed [search-controller
+             (mat/TextEditingController.)
+             :dispose ((fn [c] (.dispose ^mat/TextEditingController c)))]
    :watch [state app-state]
-   (let [{:keys [theme-mode is-loading search-results search-query active-filters enabled-sources is-youtube-search]} state
+   (let [{:keys [theme-mode is-loading search-results search-query active-filters enabled-sources is-youtube-search error-message]} state
          is-dark? (= theme-mode mat.ThemeMode/dark)
          display-results (vec
                           (cond
@@ -479,12 +483,13 @@
                                         ctx
                                         (mat/MaterialPageRoute. .builder (fn [ctx] (settings-screen))))
                                        nil))])
-      .floatingActionButton (mat/FloatingActionButton.
+      .floatingActionButton (mat/FloatingActionButton.extended
                              .onPressed (fn []
                                           (perform-youtube-search! search-query)
                                           nil)
                              .backgroundColor (mat/Color. 0xFF1565C0)
-                             .child (mat/Icon. mat.Icons/play_circle_filled .color mat.Colors/white .size 36)
+                             .icon (mat/Icon. mat.Icons/play_circle_filled .color mat.Colors/white)
+                             .label (mat/Text. "YouTube" .style (mat/TextStyle. .color mat.Colors/white .fontWeight mat.FontWeight/bold))
                              .tooltip "Buscar no YouTube")
       .body (mat/Column.
              .children
@@ -495,7 +500,18 @@
                           .children
                           [(mat/Expanded.
                             .child (mat/TextField.
-                                    .decoration (mat/InputDecoration. .labelText "Pesquisar (Português)" .border (mat/OutlineInputBorder.))
+                                    .controller search-controller
+                                    .decoration (mat/InputDecoration.
+                                                 .labelText "Pesquisar (Português)"
+                                                 .border (mat/OutlineInputBorder.)
+                                                 .suffixIcon (when-not (str/blank? search-query)
+                                                               (mat/IconButton.
+                                                                .icon (mat/Icon. mat.Icons/clear .size 20.0)
+                                                                .onPressed (fn []
+                                                                             (.clear ^mat/TextEditingController search-controller)
+                                                                             (swap! app-state assoc :search-query "")
+                                                                             nil))))
+                                    .textInputAction mat.TextInputAction/search
                                     .onChanged #(swap! app-state assoc :search-query %)
                                     .onSubmitted (fn [val]
                                                    (perform-search! val)
@@ -533,8 +549,7 @@
                          .shape (mat/RoundedRectangleBorder. .borderRadius (mat/BorderRadius.circular 8))
                          .elevation 1
                          .pressElevation 2
-                         .visualDensity mat.VisualDensity/compact
-                         .padding (mat/EdgeInsets.symmetric .horizontal 4.0)))]
+                         .padding (mat/EdgeInsets.symmetric .horizontal 8.0 .vertical 6.0)))]
                      (map
                       (fn [source]
                         (let [is-selected? (contains? active-filters source)
@@ -557,14 +572,39 @@
                            .shape (mat/RoundedRectangleBorder. .borderRadius (mat/BorderRadius.circular 8))
                            .elevation 1
                            .pressElevation 2
-                           .visualDensity mat.VisualDensity/compact
-                           .padding (mat/EdgeInsets.symmetric .horizontal 4.0))))
+                           .padding (mat/EdgeInsets.symmetric .horizontal 8.0 .vertical 6.0))))
                       (sort (seq enabled-sources)))))))
                 (if is-loading
                   (mat/LinearProgressIndicator.)
                   (mat/SizedBox.shrink))
                 (mat/Expanded.
-                 .child (if (and (empty? display-results) (not is-loading))
+                 .child (cond
+                          error-message
+                          (mat/Center.
+                           .child (mat/Padding.
+                                   .padding (mat/EdgeInsets.all 32.0)
+                                   .child (mat/Column.
+                                           .mainAxisAlignment mat.MainAxisAlignment/center
+                                           .crossAxisAlignment mat.CrossAxisAlignment/center
+                                           .children
+                                           [(mat/Icon. mat.Icons/wifi_off
+                                                       .size 56
+                                                       .color (.-shade400 mat.Colors/red))
+                                            (mat/SizedBox. .height 16)
+                                            (mat/Text.
+                                             error-message
+                                             .style (mat/TextStyle.
+                                                     .fontSize 15
+                                                     .color (.-shade700 mat.Colors/red))
+                                             .textAlign mat.TextAlign/center)
+                                            (mat/SizedBox. .height 16)
+                                            (mat/ElevatedButton.
+                                             .onPressed (fn []
+                                                          (perform-search! search-query)
+                                                          nil)
+                                             .child (mat/Text. "Tentar novamente"))])))
+
+                          (and (empty? display-results) (not is-loading))
                           (mat/Center.
                            .child (mat/Padding.
                                    .padding (mat/EdgeInsets.all 32.0)
@@ -587,68 +627,37 @@
                                                        .color (.-shade600 mat.Colors/grey))
                                                .textAlign mat.TextAlign/center)
                                               (when (and (not (str/blank? search-query)) (not is-youtube-search))
-                                                (mat/Padding.
-                                                 .padding (mat/EdgeInsets.only .top 8.0)
-                                                 .child (mat/Text.
-                                                         "Tente pesquisar no YouTube tocando no botão azul no canto inferior direito."
-                                                         .style (mat/TextStyle.
-                                                                 .fontSize 14
-                                                                 .color (.-shade500 mat.Colors/grey))
-                                                         .textAlign mat.TextAlign/center)))]))))
+                                                (mat/Column.
+                                                 .mainAxisSize mat.MainAxisSize/min
+                                                 .children
+                                                 [(mat/Padding.
+                                                   .padding (mat/EdgeInsets.only .top 8.0)
+                                                   .child (mat/Text.
+                                                           "Não encontrado nos dicionários."
+                                                           .style (mat/TextStyle.
+                                                                   .fontSize 14
+                                                                   .color (.-shade500 mat.Colors/grey))
+                                                           .textAlign mat.TextAlign/center))
+                                                  (mat/TextButton.
+                                                   .onPressed (fn []
+                                                                (perform-youtube-search! search-query)
+                                                                nil)
+                                                   .child (mat/Row.
+                                                           .mainAxisSize mat.MainAxisSize/min
+                                                           .children
+                                                           [(mat/Icon. mat.Icons/play_circle_filled
+                                                                       .size 18
+                                                                       .color (mat/Color. 0xFF1565C0))
+                                                            (mat/SizedBox. .width 6)
+                                                            (mat/Text. "Buscar no YouTube"
+                                                                       .style (mat/TextStyle.
+                                                                               .color (mat/Color. 0xFF1565C0)
+                                                                               .fontWeight mat.FontWeight/w600))]))]))]))))
+                          :else
                           (mat/ListView.builder
                            .itemCount (count display-results)
                            .itemBuilder (fn [ctx idx]
                                           (dictionary-item-card (get display-results idx))))))]))))))
-
-(defn splash-screen []
-  (f/widget
-   :context ctx
-   :managed [_ (Future/delayed (Duration. .seconds 3)
-                               (fn []
-                                 (when (.-mounted ctx)
-                                   (mat.Navigator/pushReplacement
-                                    ctx
-                                    (mat/MaterialPageRoute. .builder (fn [ctx] (home-page)))))))
-             :dispose ((fn [f] nil))]
-   :let [is-dark? (= (.-brightness (mat.Theme/of ctx)) mat.Brightness/dark)]
-   (mat/Scaffold.
-    .backgroundColor (if is-dark? (mat/Color. 0xFF121212) mat.Colors/white)
-    .body (mat/Center.
-           .child (mat/Column.
-                   .mainAxisAlignment mat.MainAxisAlignment/center
-                   .children
-                   [(mat/Container.
-                     .padding (mat/EdgeInsets.all 40)
-                     .decoration (mat/BoxDecoration.
-                                  .color (if is-dark? mat.Colors/black (.-shade600 mat.Colors/blue))
-                                  .shape mat.BoxShape/circle
-                                  .boxShadow [(mat/BoxShadow.
-                                               .color (.withOpacity mat.Colors/black 0.2)
-                                               .blurRadius 15
-                                               .offset (mat/Offset. 0.0 5.0))]
-                                  .border (mat/Border.all
-                                           .color (if is-dark? mat.Colors/white24 (.-shade300 mat.Colors/blue))
-                                           .width 2))
-                     .child (svg/SvgPicture.asset
-                             "assets/icone_logo.svg"
-                             .width 140
-                             .fit mat.BoxFit/contain
-                             .colorFilter (mat.ColorFilter/mode mat.Colors/white mat.BlendMode/srcIn)))
-                    (mat/SizedBox. .height 48)
-                    (mat/Text. "Dicionário Libras"
-                               .style (mat/TextStyle.
-                                       .fontSize 32
-                                       .fontWeight mat.FontWeight/bold
-                                       .color (if is-dark? mat.Colors/white (.-shade900 mat.Colors/blue))
-                                       .letterSpacing 1.5))
-                    (mat/SizedBox. .height 32)
-                    (mat/SizedBox.
-                     .width 45
-                     .height 45
-                     .child (mat/CircularProgressIndicator.
-                             .strokeWidth 3
-                             .valueColor (mat/AlwaysStoppedAnimation.
-                                          (if is-dark? (.-shade400 mat.Colors/blue) (.-shade800 mat.Colors/blue)))))])))))
 
 (defn main-app []
   (f/widget
