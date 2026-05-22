@@ -255,9 +255,12 @@
     .elevation 3
     .shape (mat/RoundedRectangleBorder. .borderRadius (mat/BorderRadius.circular 12))
     .clipBehavior mat.Clip/antiAlias
-    .child (mat/InkWell.
-            .onTap #(swap! expanded? not)
-            .child (mat/Column.
+    .child (mat/Semantics.
+            .label (str (:title item) ", " (:source item))
+            .hint (if is-expanded "Toque para recolher" "Toque para expandir")
+            .child (mat/InkWell.
+                    .onTap #(swap! expanded? not)
+                    .child (mat/Column.
                     .mainAxisSize mat.MainAxisSize/min
                     .crossAxisAlignment mat.CrossAxisAlignment/stretch
                     .children
@@ -356,7 +359,8 @@
                                   (conj (mat/Padding.
                                          .padding (mat/EdgeInsets.only .bottom 16.0)
                                          .child (chewie-video-widget (:video-url item)))))))
-                       (mat/SizedBox.shrink))])))))
+                       (mat/SizedBox.shrink))]))))))
+
 
 (defn settings-screen []
   (f/widget
