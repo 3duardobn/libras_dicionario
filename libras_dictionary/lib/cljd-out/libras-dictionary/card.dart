@@ -251,11 +251,11 @@ dc.dynamic $_build$2(dc.dynamic state$9129_$AUTO_$8, dc.dynamic ctx$9130_$AUTO_$
 final lcoc_flutter.WatchState state$9123_$AUTO_$4=(state$9129_$AUTO_$8 as lcoc_flutter.WatchState);
 final dc.dynamic app$4=state$9123_$AUTO_$4.latest;
 final f_widgets.BuildContext context$9100_$AUTO_$2=(ctx$9130_$AUTO_$2 as f_widgets.BuildContext);
-final dc.bool is_favorite$1=lcoc_core.boolean(lcoc_core.some((dc.dynamic p1$9764_$SHARP_$1, ){
+final dc.bool is_favorite$1=lcoc_core.boolean(lcoc_core.some((dc.dynamic p1$9762_$SHARP_$1, ){
 final lcoc_core.VectorNode arg$5=lcoc_core.$_EMPTY_VECTOR.root;
-final dc.List<dc.dynamic> fl$5=(dc.List<dc.dynamic>.filled(3, (const lcoc_core.Keyword(null, "title", 3035382670, ).$_invoke$1(p1$9764_$SHARP_$1, )), ));
-(fl$5[1]=(const lcoc_core.Keyword(null, "link", 1569434702, ).$_invoke$1(p1$9764_$SHARP_$1, )));
-(fl$5[2]=(const lcoc_core.Keyword(null, "source", 10120462, ).$_invoke$1(p1$9764_$SHARP_$1, )));
+final dc.List<dc.dynamic> fl$5=(dc.List<dc.dynamic>.filled(3, (const lcoc_core.Keyword(null, "title", 3035382670, ).$_invoke$1(p1$9762_$SHARP_$1, )), ));
+(fl$5[1]=(const lcoc_core.Keyword(null, "link", 1569434702, ).$_invoke$1(p1$9762_$SHARP_$1, )));
+(fl$5[2]=(const lcoc_core.Keyword(null, "source", 10120462, ).$_invoke$1(p1$9762_$SHARP_$1, )));
 final lcoc_core.VectorNode arg$6=lcoc_core.$_EMPTY_VECTOR.root;
 final dc.List<dc.dynamic> fl$6=(dc.List<dc.dynamic>.filled(3, (const lcoc_core.Keyword(null, "title", 3035382670, ).$_invoke$1(_2, )), ));
 (fl$6[1]=(const lcoc_core.Keyword(null, "link", 1569434702, ).$_invoke$1(_2, )));

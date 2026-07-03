@@ -1,15 +1,16 @@
 // ignore_for_file: type=lint, unnecessary_cast, unnecessary_type_check, unused_import, unused_local_variable, unused_label, unnecessary_question_mark, unused_catch_clause, type_check_with_null, dead_code
 import "dart:core" as dc;
+import "package:youtube_player_iframe/youtube_player_iframe.dart" as y_youtube_player_iframe;
 import "../cljd/core.dart" as lcoc_core;
 import "package:flutter/foundation.dart" as f_foundation;
 import "package:video_player/video_player.dart" as v_video_player;
 import "api.dart" as lcold_api;
 import "player.dart" as lcold_player;
 import "strings.dart" as lcold_strings;
+import "dart:async" as da;
 import "package:chewie/chewie.dart" as c_chewie;
 import "package:flutter/widgets.dart" as f_widgets;
 import "state.dart" as lcold_state;
-import "package:youtube_player_flutter/youtube_player_flutter.dart" as y_youtube_player_flutter;
 import "../cljd/flutter.dart" as lcoc_flutter;
 import "package:flutter/material.dart" as f_material;
 
@@ -274,80 +275,27 @@ return lcoc_flutter.ResourceState(null, null, );
 dc.dynamic $_init_state$1(dc.dynamic state$9179_$AUTO_$1, ){
 final lcoc_flutter.ResourceState doto$7753_$AUTO_$1=(state$9179_$AUTO_$1 as lcoc_flutter.ResourceState);
 doto$7753_$AUTO_$1.k=_0;
-final lcoc_core.Atom replaying$QMARK_$1=(lcoc_core.atom.$_invoke$1(false, ));
 final lcoc_core.Atom error$QMARK_$1=(lcoc_core.atom.$_invoke$1(false, ));
-final y_youtube_player_flutter.YoutubePlayerController controller$1=y_youtube_player_flutter.YoutubePlayerController(initialVideoId: (_0 as dc.String), flags: const y_youtube_player_flutter.YoutubePlayerFlags(autoPlay: false, mute: false, loop: false, hideControls: false, hideThumbnail: true, controlsVisibleAtStart: true, disableDragSeek: true, ), );
-dc.Future<dc.dynamic>? listener$1(){
-final y_youtube_player_flutter.YoutubePlayerValue value$1=controller$1.value;
-if((lcoc_core.not$EQ_.$_invoke$2(value$1.errorCode, 0, ))){
+final y_youtube_player_iframe.YoutubePlayerController controller$1=(y_youtube_player_iframe.YoutubePlayerController.fromVideoId(videoId: (_0 as dc.String), autoPlay: false, params: const y_youtube_player_iframe.YoutubePlayerParams(showControls: true, showFullscreenButton: true, strictRelatedVideos: true, ), ));
+final da.StreamSubscription<y_youtube_player_iframe.YoutubePlayerValue> subscription$1=(controller$1.stream.listen((dc.dynamic value$1, ){
+if((lcoc_core.not$EQ_.$_invoke$2((value$1 as y_youtube_player_iframe.YoutubePlayerValue).error, y_youtube_player_iframe.YoutubeError.none, ))){
 (lcoc_core.reset$BANG_(error$QMARK_$1, true, ));
 }else{
 }
-if((lcoc_core.$EQ_.$_invoke$2(value$1.playerState, y_youtube_player_flutter.PlayerState.playing, ))){
-(lcold_state.claim_playback$BANG_(controller$1, (){
-return (controller$1.pause());
-}, ));
-}else{
-}
-if(value$1.isReady){
-final dc.Duration position$1=value$1.position;
-final dc.Duration duration$1=value$1.metaData.duration;
-final dc.bool and$6836_$AUTO_$1=(duration$1.inMilliseconds > 0);
-late final dc.bool $if_$1;
-if(and$6836_$AUTO_$1){
-final dc.bool and$6836_$AUTO_$2=(position$1.inMilliseconds >= (duration$1.inMilliseconds - 300));
-if(and$6836_$AUTO_$2){
-final dc.dynamic test$1=lcoc_core.deref(replaying$QMARK_$1, );
-if(((false != test$1) && (null != test$1))){
-$if_$1=false;
-}else{
-$if_$1=true;
-}
-}else{
-$if_$1=and$6836_$AUTO_$2;
-}
-}else{
-$if_$1=and$6836_$AUTO_$1;
-}
-if($if_$1){
-(lcoc_core.reset$BANG_(replaying$QMARK_$1, true, ));
-(controller$1.seekTo(const dc.Duration(seconds: 0, ), ));
-return (dc.Future.delayed(const dc.Duration(milliseconds: 600, ), (){
-return lcoc_core.reset$BANG_(replaying$QMARK_$1, false, );
-}, ));
-}
-final dc.bool and$6836_$AUTO_$3=(lcoc_core.$EQ_.$_invoke$2(value$1.playerState, y_youtube_player_flutter.PlayerState.ended, ));
-late final dc.bool $if_$2;
-if(and$6836_$AUTO_$3){
-final dc.dynamic test$2=lcoc_core.deref(replaying$QMARK_$1, );
-if(((false != test$2) && (null != test$2))){
-$if_$2=false;
-}else{
-$if_$2=true;
-}
-}else{
-$if_$2=and$6836_$AUTO_$3;
-}
-if($if_$2){
-(lcoc_core.reset$BANG_(replaying$QMARK_$1, true, ));
-(controller$1.seekTo(const dc.Duration(seconds: 0, ), ));
-(controller$1.play());
-return (dc.Future.delayed(const dc.Duration(milliseconds: 600, ), (){
-return lcoc_core.reset$BANG_(replaying$QMARK_$1, false, );
-}, ));
+if((lcoc_core.$EQ_.$_invoke$2((value$1 as y_youtube_player_iframe.YoutubePlayerValue).playerState, y_youtube_player_iframe.PlayerState.playing, ))){
+return lcold_state.claim_playback$BANG_(controller$1, (){
+return (controller$1.pauseVideo());
+}, );
 }
 return null;
-}
-return null;
-}
-(controller$1.addListener(listener$1, ));
+}, ));
 final dc.List<dc.dynamic> fl$1=(dc.List<dc.dynamic>.filled(6, const lcoc_core.Keyword(null, "error?", 4039413826, ), ));
 (fl$1[1]=error$QMARK_$1);
-(fl$1[2]=const lcoc_core.Keyword(null, "listener", 3068231526, ));
-(fl$1[3]=listener$1);
+(fl$1[2]=const lcoc_core.Keyword(null, "subscription", 1175229482, ));
+(fl$1[3]=subscription$1);
 (fl$1[4]=const lcoc_core.Keyword(null, "controller", 1089430550, ));
 (fl$1[5]=controller$1);
-doto$7753_$AUTO_$1.resource=lcoc_core.PersistentHashMap(null, lcoc_core.BitmapNode(3, 4194372, 4194372, fl$1, ), -1, );
+doto$7753_$AUTO_$1.resource=lcoc_core.PersistentHashMap(null, lcoc_core.BitmapNode(3, 4195332, 4195332, fl$1, ), -1, );
 return doto$7753_$AUTO_$1;
 }
 
@@ -356,24 +304,9 @@ final lcoc_flutter.ResourceState state$9179_$AUTO_$3=(state$9179_$AUTO_$2 as lco
 state$9179_$AUTO_$3.k=null;
 ((dc.dynamic state$1, ){
 final dc.dynamic c$1=(const lcoc_core.Keyword(null, "controller", 1089430550, ).$_invoke$1(state$1, ));
-final dc.dynamic l$1=(const lcoc_core.Keyword(null, "listener", 3068231526, ).$_invoke$1(state$1, ));
 (lcold_state.release_playback$BANG_(c$1, ));
-late final void Function() wrapper_f$1;
-if((l$1 is void Function())){
-wrapper_f$1=l$1;
-}else{
-wrapper_f$1=(){
-if((l$1 is dc.Function)){
-return (l$1 as dc.Function)();
-}
-if((l$1 is lcoc_core.IFn$iface)){
-return ((l$1 as lcoc_core.IFn$iface).$_invoke$0());
-}
-return (lcoc_core.IFn.extensions(l$1, ).$_invoke$0(l$1, ));
-};
-}
-((c$1 as y_youtube_player_flutter.YoutubePlayerController).removeListener(wrapper_f$1, ));
-return ((c$1 as y_youtube_player_flutter.YoutubePlayerController).dispose());
+((const lcoc_core.Keyword(null, "subscription", 1175229482, ).$_invoke$1(state$1, ) as da.StreamSubscription).cancel());
+return ((c$1 as y_youtube_player_iframe.YoutubePlayerController).close());
 }((state$9179_$AUTO_$3.resource as lcoc_core.PersistentHashMap), ));
 state$9179_$AUTO_$3.resource=null;
 return state$9179_$AUTO_$3;
@@ -393,99 +326,31 @@ return null;
 }
 ((dc.dynamic state$2, ){
 final dc.dynamic c$2=(const lcoc_core.Keyword(null, "controller", 1089430550, ).$_invoke$1(state$2, ));
-final dc.dynamic l$2=(const lcoc_core.Keyword(null, "listener", 3068231526, ).$_invoke$1(state$2, ));
 (lcold_state.release_playback$BANG_(c$2, ));
-late final void Function() wrapper_f$2;
-if((l$2 is void Function())){
-wrapper_f$2=l$2;
-}else{
-wrapper_f$2=(){
-if((l$2 is dc.Function)){
-return (l$2 as dc.Function)();
-}
-if((l$2 is lcoc_core.IFn$iface)){
-return ((l$2 as lcoc_core.IFn$iface).$_invoke$0());
-}
-return (lcoc_core.IFn.extensions(l$2, ).$_invoke$0(l$2, ));
-};
-}
-((c$2 as y_youtube_player_flutter.YoutubePlayerController).removeListener(wrapper_f$2, ));
-return ((c$2 as y_youtube_player_flutter.YoutubePlayerController).dispose());
+((const lcoc_core.Keyword(null, "subscription", 1175229482, ).$_invoke$1(state$2, ) as da.StreamSubscription).cancel());
+return ((c$2 as y_youtube_player_iframe.YoutubePlayerController).close());
 }((state$9179_$AUTO_$7.resource as lcoc_core.PersistentHashMap), ));
-final lcoc_core.Atom replaying$QMARK_$5=(lcoc_core.atom.$_invoke$1(false, ));
 final lcoc_core.Atom error$QMARK_$5=(lcoc_core.atom.$_invoke$1(false, ));
-final y_youtube_player_flutter.YoutubePlayerController controller$5=y_youtube_player_flutter.YoutubePlayerController(initialVideoId: (_0 as dc.String), flags: const y_youtube_player_flutter.YoutubePlayerFlags(autoPlay: false, mute: false, loop: false, hideControls: false, hideThumbnail: true, controlsVisibleAtStart: true, disableDragSeek: true, ), );
-dc.Future<dc.dynamic>? listener$5(){
-final y_youtube_player_flutter.YoutubePlayerValue value$5=controller$5.value;
-if((lcoc_core.not$EQ_.$_invoke$2(value$5.errorCode, 0, ))){
+final y_youtube_player_iframe.YoutubePlayerController controller$5=(y_youtube_player_iframe.YoutubePlayerController.fromVideoId(videoId: (_0 as dc.String), autoPlay: false, params: const y_youtube_player_iframe.YoutubePlayerParams(showControls: true, showFullscreenButton: true, strictRelatedVideos: true, ), ));
+final da.StreamSubscription<y_youtube_player_iframe.YoutubePlayerValue> subscription$5=(controller$5.stream.listen((dc.dynamic value$5, ){
+if((lcoc_core.not$EQ_.$_invoke$2((value$5 as y_youtube_player_iframe.YoutubePlayerValue).error, y_youtube_player_iframe.YoutubeError.none, ))){
 (lcoc_core.reset$BANG_(error$QMARK_$5, true, ));
 }else{
 }
-if((lcoc_core.$EQ_.$_invoke$2(value$5.playerState, y_youtube_player_flutter.PlayerState.playing, ))){
-(lcold_state.claim_playback$BANG_(controller$5, (){
-return (controller$5.pause());
-}, ));
-}else{
-}
-if(value$5.isReady){
-final dc.Duration position$5=value$5.position;
-final dc.Duration duration$5=value$5.metaData.duration;
-final dc.bool and$6836_$AUTO_$13=(duration$5.inMilliseconds > 0);
-late final dc.bool $if_$9;
-if(and$6836_$AUTO_$13){
-final dc.bool and$6836_$AUTO_$14=(position$5.inMilliseconds >= (duration$5.inMilliseconds - 300));
-if(and$6836_$AUTO_$14){
-final dc.dynamic test$10=lcoc_core.deref(replaying$QMARK_$5, );
-if(((false != test$10) && (null != test$10))){
-$if_$9=false;
-}else{
-$if_$9=true;
-}
-}else{
-$if_$9=and$6836_$AUTO_$14;
-}
-}else{
-$if_$9=and$6836_$AUTO_$13;
-}
-if($if_$9){
-(lcoc_core.reset$BANG_(replaying$QMARK_$5, true, ));
-(controller$5.seekTo(const dc.Duration(seconds: 0, ), ));
-return (dc.Future.delayed(const dc.Duration(milliseconds: 600, ), (){
-return lcoc_core.reset$BANG_(replaying$QMARK_$5, false, );
-}, ));
-}
-final dc.bool and$6836_$AUTO_$15=(lcoc_core.$EQ_.$_invoke$2(value$5.playerState, y_youtube_player_flutter.PlayerState.ended, ));
-late final dc.bool $if_$10;
-if(and$6836_$AUTO_$15){
-final dc.dynamic test$11=lcoc_core.deref(replaying$QMARK_$5, );
-if(((false != test$11) && (null != test$11))){
-$if_$10=false;
-}else{
-$if_$10=true;
-}
-}else{
-$if_$10=and$6836_$AUTO_$15;
-}
-if($if_$10){
-(lcoc_core.reset$BANG_(replaying$QMARK_$5, true, ));
-(controller$5.seekTo(const dc.Duration(seconds: 0, ), ));
-(controller$5.play());
-return (dc.Future.delayed(const dc.Duration(milliseconds: 600, ), (){
-return lcoc_core.reset$BANG_(replaying$QMARK_$5, false, );
-}, ));
+if((lcoc_core.$EQ_.$_invoke$2((value$5 as y_youtube_player_iframe.YoutubePlayerValue).playerState, y_youtube_player_iframe.PlayerState.playing, ))){
+return lcold_state.claim_playback$BANG_(controller$5, (){
+return (controller$5.pauseVideo());
+}, );
 }
 return null;
-}
-return null;
-}
-(controller$5.addListener(listener$5, ));
+}, ));
 final dc.List<dc.dynamic> fl$10=(dc.List<dc.dynamic>.filled(6, const lcoc_core.Keyword(null, "error?", 4039413826, ), ));
 (fl$10[1]=error$QMARK_$5);
-(fl$10[2]=const lcoc_core.Keyword(null, "listener", 3068231526, ));
-(fl$10[3]=listener$5);
+(fl$10[2]=const lcoc_core.Keyword(null, "subscription", 1175229482, ));
+(fl$10[3]=subscription$5);
 (fl$10[4]=const lcoc_core.Keyword(null, "controller", 1089430550, ));
 (fl$10[5]=controller$5);
-state$9179_$AUTO_$7.resource=lcoc_core.PersistentHashMap(null, lcoc_core.BitmapNode(3, 4194372, 4194372, fl$10, ), -1, );
+state$9179_$AUTO_$7.resource=lcoc_core.PersistentHashMap(null, lcoc_core.BitmapNode(3, 4195332, 4195332, fl$10, ), -1, );
 state$9179_$AUTO_$7.k=_0;
 return state$9179_$AUTO_$7;
 }
@@ -559,11 +424,11 @@ dc.dynamic $_build$2(dc.dynamic state$9129_$AUTO_$4, dc.dynamic ctx$9130_$AUTO_$
 final lcoc_flutter.WatchState state$9123_$AUTO_$2=(state$9129_$AUTO_$4 as lcoc_flutter.WatchState);
 final dc.dynamic state$8=state$9123_$AUTO_$2.latest;
 final f_widgets.BuildContext context$9100_$AUTO_$2=(ctx$9130_$AUTO_$1 as f_widgets.BuildContext);
-late final dc.dynamic map$9751_$2;
+late final dc.dynamic map$9749_$2;
 if(((lcoc_core.ISeq.satisfies(state$8, )) as dc.bool)){
 final dc.dynamic test$1=lcoc_core.next(state$8, );
 if(((false != test$1) && (null != test$1))){
-map$9751_$2=lcoc_core.seq_to_map_for_destructuring(state$8, );
+map$9749_$2=lcoc_core.seq_to_map_for_destructuring(state$8, );
 }else{
 late final dc.dynamic $if_$4;
 if((state$8 is lcoc_core.ISeqable$iface)){
@@ -572,37 +437,37 @@ $if_$4=((state$8 as lcoc_core.ISeqable$iface).$_seq$0());
 $if_$4=((lcoc_core.ISeqable.extensions(state$8, ) as lcoc_core.ISeqable$ext).$_seq$0(state$8, ));
 }
 if(((false != $if_$4) && (null != $if_$4))){
-map$9751_$2=lcoc_core.first(state$8, );
+map$9749_$2=lcoc_core.first(state$8, );
 }else{
-map$9751_$2=lcoc_core.$_EMPTY_MAP;
+map$9749_$2=lcoc_core.$_EMPTY_MAP;
 }
 }
 }else{
-map$9751_$2=state$8;
+map$9749_$2=state$8;
 }
 late final dc.dynamic video_controller$1;
-if((map$9751_$2 is lcoc_core.ILookup$iface)){
-video_controller$1=((map$9751_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "video-controller", 830451199, ), ));
+if((map$9749_$2 is lcoc_core.ILookup$iface)){
+video_controller$1=((map$9749_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "video-controller", 830451199, ), ));
 }else{
-video_controller$1=((lcoc_core.ILookup.extensions(map$9751_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9751_$2, const lcoc_core.Keyword(null, "video-controller", 830451199, ), ));
+video_controller$1=((lcoc_core.ILookup.extensions(map$9749_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9749_$2, const lcoc_core.Keyword(null, "video-controller", 830451199, ), ));
 }
 late final dc.dynamic chewie_controller$1;
-if((map$9751_$2 is lcoc_core.ILookup$iface)){
-chewie_controller$1=((map$9751_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "chewie-controller", 615100901, ), ));
+if((map$9749_$2 is lcoc_core.ILookup$iface)){
+chewie_controller$1=((map$9749_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "chewie-controller", 615100901, ), ));
 }else{
-chewie_controller$1=((lcoc_core.ILookup.extensions(map$9751_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9751_$2, const lcoc_core.Keyword(null, "chewie-controller", 615100901, ), ));
+chewie_controller$1=((lcoc_core.ILookup.extensions(map$9749_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9749_$2, const lcoc_core.Keyword(null, "chewie-controller", 615100901, ), ));
 }
 late final dc.dynamic is_loading$1;
-if((map$9751_$2 is lcoc_core.ILookup$iface)){
-is_loading$1=((map$9751_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "is-loading", 3908007470, ), ));
+if((map$9749_$2 is lcoc_core.ILookup$iface)){
+is_loading$1=((map$9749_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "is-loading", 3908007470, ), ));
 }else{
-is_loading$1=((lcoc_core.ILookup.extensions(map$9751_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9751_$2, const lcoc_core.Keyword(null, "is-loading", 3908007470, ), ));
+is_loading$1=((lcoc_core.ILookup.extensions(map$9749_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9749_$2, const lcoc_core.Keyword(null, "is-loading", 3908007470, ), ));
 }
 late final dc.dynamic has_error$1;
-if((map$9751_$2 is lcoc_core.ILookup$iface)){
-has_error$1=((map$9751_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "has-error", 60956586, ), ));
+if((map$9749_$2 is lcoc_core.ILookup$iface)){
+has_error$1=((map$9749_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "has-error", 60956586, ), ));
 }else{
-has_error$1=((lcoc_core.ILookup.extensions(map$9751_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9751_$2, const lcoc_core.Keyword(null, "has-error", 60956586, ), ));
+has_error$1=((lcoc_core.ILookup.extensions(map$9749_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9749_$2, const lcoc_core.Keyword(null, "has-error", 60956586, ), ));
 }
 late final f_material.SingleChildRenderObjectWidget child$9287_$AUTO_$1;
 if(((false != has_error$1) && (null != has_error$1))){
@@ -638,13 +503,13 @@ if(f_foundation.kDebugMode){
 final dc.dynamic test$2=(lcoc_flutter.get_of.$_invoke$2(context$9100_$AUTO_$2, const lcoc_core.Keyword("cljd.flutter", "repl", 2765474413, ), ));
 if(((false != test$2) && (null != test$2))){
 final dc.List<dc.dynamic> fl$9=(dc.List<dc.dynamic>.filled(6, const lcoc_core.Keyword(null, "line", 878494669, ), ));
-(fl$9[1]=131);
+(fl$9[1]=113);
 (fl$9[2]=const lcoc_core.Keyword(null, "column", 3362807310, ));
 (fl$9[3]=4);
 (fl$9[4]=const lcoc_core.Keyword(null, "ns", 1494845879, ));
 (fl$9[5]=(lcoc_core.symbol.$_invoke$2(null, "libras-dictionary.player", )));
 return lcoc_flutter.ReplPointWidget(lcoc_core.PersistentHashMap(null, lcoc_core.BitmapNode(3, 8413184, 8413184, fl$9, ), -1, ), (){
-return (lcoc_core.apply.$_invoke$2(lcoc_core.hash_map, <dc.dynamic>[(lcoc_core.symbol.$_invoke$2(null, "___9128__auto__", )), this, (lcoc_core.symbol.$_invoke$2(null, "ctx__9130__auto__", )), ctx$9130_$AUTO_$1, (lcoc_core.symbol.$_invoke$2(null, "state-atom", )), _2, (lcoc_core.symbol.$_invoke$2(null, "state__9129__auto__", )), state$9129_$AUTO_$4, (lcoc_core.symbol.$_invoke$2(null, "state__9123__auto__", )), state$9123_$AUTO_$2, (lcoc_core.symbol.$_invoke$2(null, "context__9100__auto__", )), context$9100_$AUTO_$2, (lcoc_core.symbol.$_invoke$2(null, "___9178__auto__", )), _3, (lcoc_core.symbol.$_invoke$2(null, "is-loading", )), is_loading$1, (lcoc_core.symbol.$_invoke$2(null, "chewie-controller", )), chewie_controller$1, (lcoc_core.symbol.$_invoke$2(null, "video-url", )), _4, (lcoc_core.symbol.$_invoke$2(null, "state", )), state$8, (lcoc_core.symbol.$_invoke$2(null, "has-error", )), has_error$1, (lcoc_core.symbol.$_invoke$2(null, "ctx__9180__auto__", )), _0, (lcoc_core.symbol.$_invoke$2(null, "video-controller", )), video_controller$1, (lcoc_core.symbol.$_invoke$2(null, "state__9179__auto__", )), _1, (lcoc_core.symbol.$_invoke$2(null, "map__9751", )), map$9751_$2, ], ));
+return (lcoc_core.apply.$_invoke$2(lcoc_core.hash_map, <dc.dynamic>[(lcoc_core.symbol.$_invoke$2(null, "___9128__auto__", )), this, (lcoc_core.symbol.$_invoke$2(null, "ctx__9130__auto__", )), ctx$9130_$AUTO_$1, (lcoc_core.symbol.$_invoke$2(null, "state-atom", )), _2, (lcoc_core.symbol.$_invoke$2(null, "state__9129__auto__", )), state$9129_$AUTO_$4, (lcoc_core.symbol.$_invoke$2(null, "state__9123__auto__", )), state$9123_$AUTO_$2, (lcoc_core.symbol.$_invoke$2(null, "context__9100__auto__", )), context$9100_$AUTO_$2, (lcoc_core.symbol.$_invoke$2(null, "___9178__auto__", )), _3, (lcoc_core.symbol.$_invoke$2(null, "map__9749", )), map$9749_$2, (lcoc_core.symbol.$_invoke$2(null, "is-loading", )), is_loading$1, (lcoc_core.symbol.$_invoke$2(null, "chewie-controller", )), chewie_controller$1, (lcoc_core.symbol.$_invoke$2(null, "video-url", )), _4, (lcoc_core.symbol.$_invoke$2(null, "state", )), state$8, (lcoc_core.symbol.$_invoke$2(null, "has-error", )), has_error$1, (lcoc_core.symbol.$_invoke$2(null, "ctx__9180__auto__", )), _0, (lcoc_core.symbol.$_invoke$2(null, "video-controller", )), video_controller$1, (lcoc_core.symbol.$_invoke$2(null, "state__9179__auto__", )), _1, ], ));
 }, child$9287_$AUTO_$1, );
 }
 return child$9287_$AUTO_$1;
@@ -779,7 +644,7 @@ if(f_foundation.kDebugMode){
 final dc.dynamic test$1=(lcoc_flutter.get_of.$_invoke$2(context$9100_$AUTO_$1, const lcoc_core.Keyword("cljd.flutter", "repl", 2765474413, ), ));
 if(((false != test$1) && (null != test$1))){
 final dc.List<dc.dynamic> fl$3=(dc.List<dc.dynamic>.filled(6, const lcoc_core.Keyword(null, "line", 878494669, ), ));
-(fl$3[1]=157);
+(fl$3[1]=139);
 (fl$3[2]=const lcoc_core.Keyword(null, "column", 3362807310, ));
 (fl$3[3]=4);
 (fl$3[4]=const lcoc_core.Keyword(null, "ns", 1494845879, ));
@@ -904,7 +769,7 @@ dc.dynamic $_build$2(dc.dynamic state$9129_$AUTO_$4, dc.dynamic ctx$9130_$AUTO_$
 final lcoc_flutter.WatchState state$9123_$AUTO_$2=(state$9129_$AUTO_$4 as lcoc_flutter.WatchState);
 final dc.dynamic has_error$4=state$9123_$AUTO_$2.latest;
 final f_widgets.BuildContext context$9100_$AUTO_$2=(ctx$9130_$AUTO_$1 as f_widgets.BuildContext);
-late final f_material.Widget child$9287_$AUTO_$1;
+late final f_material.SingleChildRenderObjectWidget child$9287_$AUTO_$1;
 if(((false != has_error$4) && (null != has_error$4))){
 final lcoc_core.VectorNode arg$3=lcoc_core.$_EMPTY_VECTOR.root;
 final dc.List<dc.dynamic> fl$6=(dc.List<dc.dynamic>.filled(2, f_material.Text((lcold_strings.youtube_error$v1 as dc.String), style: const f_material.TextStyle(color: f_material.Colors.red, ), textAlign: f_material.TextAlign.center, ), ));
@@ -920,13 +785,13 @@ casted$1=((lcoc_core.PersistentVector(null, 2, 5, arg$3, fl$6, -1, ) as dc.List)
 }
 child$9287_$AUTO_$1=f_material.Padding(padding: (const f_material.EdgeInsets.all(16.0, )), child: f_material.Column(mainAxisSize: f_material.MainAxisSize.min, children: casted$1, ), );
 }else{
-child$9287_$AUTO_$1=y_youtube_player_flutter.YoutubePlayer(controller: ((const lcoc_core.Keyword(null, "controller", 1089430550, ).$_invoke$1(_1, )) as y_youtube_player_flutter.YoutubePlayerController), showVideoProgressIndicator: true, );
+child$9287_$AUTO_$1=f_material.ClipRRect(borderRadius: (f_material.BorderRadius.circular(8.0, )), child: y_youtube_player_iframe.YoutubePlayer(controller: ((const lcoc_core.Keyword(null, "controller", 1089430550, ).$_invoke$1(_1, )) as y_youtube_player_iframe.YoutubePlayerController), aspectRatio: (16 / 9), ), );
 }
 if(f_foundation.kDebugMode){
-final dc.dynamic test$7=(lcoc_flutter.get_of.$_invoke$2(context$9100_$AUTO_$2, const lcoc_core.Keyword("cljd.flutter", "repl", 2765474413, ), ));
-if(((false != test$7) && (null != test$7))){
+final dc.dynamic test$1=(lcoc_flutter.get_of.$_invoke$2(context$9100_$AUTO_$2, const lcoc_core.Keyword("cljd.flutter", "repl", 2765474413, ), ));
+if(((false != test$1) && (null != test$1))){
 final dc.List<dc.dynamic> fl$7=(dc.List<dc.dynamic>.filled(6, const lcoc_core.Keyword(null, "line", 878494669, ), ));
-(fl$7[1]=63);
+(fl$7[1]=43);
 (fl$7[2]=const lcoc_core.Keyword(null, "column", 3362807310, ));
 (fl$7[3]=4);
 (fl$7[4]=const lcoc_core.Keyword(null, "ns", 1494845879, ));

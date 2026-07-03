@@ -9,56 +9,36 @@
             ["package:flutter/material.dart" :as mat]
             ["package:video_player/video_player.dart" :as v-p]
             ["package:chewie/chewie.dart" :as chewie]
-            ["package:youtube_player_flutter/youtube_player_flutter.dart" :as yt-p]))
+            ["package:youtube_player_iframe/youtube_player_iframe.dart" :as yt-i]
+            ["dart:async" :as async]))
 
-(defn youtube-player-widget [youtube-id]
+(defn youtube-player-widget
+  "Official YouTube IFrame player with the native YouTube UI only —
+  no extra Flutter control layer on top."
+  [youtube-id]
   (f/widget
    :managed [player-state
-             (let [replaying? (atom false)
-                   error? (atom false)
-                   controller (yt-p/YoutubePlayerController.
-                               .initialVideoId youtube-id
-                               .flags (yt-p/YoutubePlayerFlags.
-                                       .autoPlay false
-                                       .mute false
-                                       .loop false
-                                       .hideControls false
-                                       .hideThumbnail true
-                                       .controlsVisibleAtStart true
-                                       .disableDragSeek true))
-                   listener (fn []
-                              (let [value ^yt-p/YoutubePlayerValue (.-value controller)]
-                                (when (not= (.-errorCode value) 0)
-                                  (reset! error? true))
-                                (when (= (.-playerState value) yt-p.PlayerState/playing)
-                                  (st/claim-playback! controller (fn [] (.pause controller))))
-                                (when (.-isReady value)
-                                  (let [position ^Duration (.-position value)
-                                        duration ^Duration (-> value .-metaData .-duration)]
-                                    (if (and (> (.-inMilliseconds duration) 0)
-                                             (>= (.-inMilliseconds position) (- (.-inMilliseconds duration) 300))
-                                             (not @replaying?))
-                                      (do
-                                        (reset! replaying? true)
-                                        (.seekTo controller (Duration. .seconds 0))
-                                        (Future/delayed (Duration. .milliseconds 600)
-                                                        (fn [] (reset! replaying? false))))
-                                      (when (and (= (.-playerState value) yt-p.PlayerState/ended)
-                                                 (not @replaying?))
-                                        (reset! replaying? true)
-                                        (.seekTo controller (Duration. .seconds 0))
-                                        (.play controller)
-                                        (Future/delayed (Duration. .milliseconds 600)
-                                                        (fn [] (reset! replaying? false)))))))))]
-               (.addListener controller listener)
-               {:controller controller :listener listener :error? error?})
+             (let [error? (atom false)
+                   controller (yt-i.YoutubePlayerController/fromVideoId
+                               .videoId youtube-id
+                               .autoPlay false
+                               .params (yt-i/YoutubePlayerParams.
+                                        .showControls true
+                                        .showFullscreenButton true
+                                        .strictRelatedVideos true))
+                   subscription (.listen (.-stream controller)
+                                         (fn [^yt-i/YoutubePlayerValue value]
+                                           (when (not= (.-error value) yt-i.YoutubeError/none)
+                                             (reset! error? true))
+                                           (when (= (.-playerState value) yt-i.PlayerState/playing)
+                                             (st/claim-playback! controller (fn [] (.pauseVideo controller))))))]
+               {:controller controller :subscription subscription :error? error?})
              :refresh-on youtube-id
              :dispose ((fn [state]
-                         (let [c (:controller state)
-                               l (:listener state)]
+                         (let [c (:controller state)]
                            (st/release-playback! c)
-                           (.removeListener ^yt-p/YoutubePlayerController c l)
-                           (.dispose ^yt-p/YoutubePlayerController c))))]
+                           (.cancel ^async/StreamSubscription (:subscription state))
+                           (.close ^yt-i/YoutubePlayerController c))))]
    :watch [has-error (:error? player-state)]
    (if has-error
      (mat/Padding.
@@ -74,9 +54,11 @@
                              (st/launch-url! (str "https://www.youtube.com/watch?v=" youtube-id))
                              nil)
                 .child (mat/Text. s/open-in-youtube))]))
-     (yt-p/YoutubePlayer.
-      .controller (:controller player-state)
-      .showVideoProgressIndicator true))))
+     (mat/ClipRRect.
+      .borderRadius (mat/BorderRadius.circular 8)
+      .child (yt-i/YoutubePlayer.
+              .controller (:controller player-state)
+              .aspectRatio (/ 16 9))))))
 
 (defn- chewie-player [video-url]
   (f/widget

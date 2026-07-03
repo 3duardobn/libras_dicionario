@@ -118,11 +118,11 @@ dc.dynamic $_build$2(dc.dynamic state$9129_$AUTO_$4, dc.dynamic ctx$9130_$AUTO_$
 final lcoc_flutter.WatchState state$9123_$AUTO_$2=(state$9129_$AUTO_$4 as lcoc_flutter.WatchState);
 final dc.dynamic state$4=state$9123_$AUTO_$2.latest;
 final f_widgets.BuildContext context$9100_$AUTO_$2=(ctx$9130_$AUTO_$1 as f_widgets.BuildContext);
-late final dc.dynamic map$9775_$2;
+late final dc.dynamic map$9773_$2;
 if(((lcoc_core.ISeq.satisfies(state$4, )) as dc.bool)){
 final dc.dynamic test$1=lcoc_core.next(state$4, );
 if(((false != test$1) && (null != test$1))){
-map$9775_$2=lcoc_core.seq_to_map_for_destructuring(state$4, );
+map$9773_$2=lcoc_core.seq_to_map_for_destructuring(state$4, );
 }else{
 late final dc.dynamic $if_$1;
 if((state$4 is lcoc_core.ISeqable$iface)){
@@ -131,25 +131,25 @@ $if_$1=((state$4 as lcoc_core.ISeqable$iface).$_seq$0());
 $if_$1=((lcoc_core.ISeqable.extensions(state$4, ) as lcoc_core.ISeqable$ext).$_seq$0(state$4, ));
 }
 if(((false != $if_$1) && (null != $if_$1))){
-map$9775_$2=lcoc_core.first(state$4, );
+map$9773_$2=lcoc_core.first(state$4, );
 }else{
-map$9775_$2=lcoc_core.$_EMPTY_MAP;
+map$9773_$2=lcoc_core.$_EMPTY_MAP;
 }
 }
 }else{
-map$9775_$2=state$4;
+map$9773_$2=state$4;
 }
 late final dc.dynamic enabled_sources$1;
-if((map$9775_$2 is lcoc_core.ILookup$iface)){
-enabled_sources$1=((map$9775_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "enabled-sources", 2677619369, ), ));
+if((map$9773_$2 is lcoc_core.ILookup$iface)){
+enabled_sources$1=((map$9773_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "enabled-sources", 2677619369, ), ));
 }else{
-enabled_sources$1=((lcoc_core.ILookup.extensions(map$9775_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9775_$2, const lcoc_core.Keyword(null, "enabled-sources", 2677619369, ), ));
+enabled_sources$1=((lcoc_core.ILookup.extensions(map$9773_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9773_$2, const lcoc_core.Keyword(null, "enabled-sources", 2677619369, ), ));
 }
 late final dc.dynamic is_share_minimal$1;
-if((map$9775_$2 is lcoc_core.ILookup$iface)){
-is_share_minimal$1=((map$9775_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "is-share-minimal", 2561305987, ), ));
+if((map$9773_$2 is lcoc_core.ILookup$iface)){
+is_share_minimal$1=((map$9773_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "is-share-minimal", 2561305987, ), ));
 }else{
-is_share_minimal$1=((lcoc_core.ILookup.extensions(map$9775_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9775_$2, const lcoc_core.Keyword(null, "is-share-minimal", 2561305987, ), ));
+is_share_minimal$1=((lcoc_core.ILookup.extensions(map$9773_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9773_$2, const lcoc_core.Keyword(null, "is-share-minimal", 2561305987, ), ));
 }
 final lcoc_core.VectorNode arg$5=lcoc_core.$_EMPTY_VECTOR.root;
 final dc.List<dc.dynamic> fl$3=(dc.List<dc.dynamic>.filled(17, f_material.ListTile(title: f_material.Text((lcold_strings.settings_search_section$v1 as dc.String), style: const f_material.TextStyle(fontWeight: f_material.FontWeight.bold, ), ), ), ));

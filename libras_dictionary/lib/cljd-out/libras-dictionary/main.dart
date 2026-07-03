@@ -469,11 +469,11 @@ dc.dynamic $_build$2(dc.dynamic state$9129_$AUTO_$4, dc.dynamic ctx$9130_$AUTO_$
 final lcoc_flutter.WatchState state$9123_$AUTO_$2=(state$9129_$AUTO_$4 as lcoc_flutter.WatchState);
 final dc.dynamic state$4=state$9123_$AUTO_$2.latest;
 final f_widgets.BuildContext context$9100_$AUTO_$3=(ctx$9130_$AUTO_$1 as f_widgets.BuildContext);
-late final dc.dynamic map$9788_$2;
+late final dc.dynamic map$9786_$2;
 if(((lcoc_core.ISeq.satisfies(state$4, )) as dc.bool)){
 final dc.dynamic test$1=lcoc_core.next(state$4, );
 if(((false != test$1) && (null != test$1))){
-map$9788_$2=lcoc_core.seq_to_map_for_destructuring(state$4, );
+map$9786_$2=lcoc_core.seq_to_map_for_destructuring(state$4, );
 }else{
 late final dc.dynamic $if_$1;
 if((state$4 is lcoc_core.ISeqable$iface)){
@@ -482,73 +482,73 @@ $if_$1=((state$4 as lcoc_core.ISeqable$iface).$_seq$0());
 $if_$1=((lcoc_core.ISeqable.extensions(state$4, ) as lcoc_core.ISeqable$ext).$_seq$0(state$4, ));
 }
 if(((false != $if_$1) && (null != $if_$1))){
-map$9788_$2=lcoc_core.first(state$4, );
+map$9786_$2=lcoc_core.first(state$4, );
 }else{
-map$9788_$2=lcoc_core.$_EMPTY_MAP;
+map$9786_$2=lcoc_core.$_EMPTY_MAP;
 }
 }
 }else{
-map$9788_$2=state$4;
+map$9786_$2=state$4;
 }
 late final dc.dynamic error_message$1;
-if((map$9788_$2 is lcoc_core.ILookup$iface)){
-error_message$1=((map$9788_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "error-message", 1587404037, ), ));
+if((map$9786_$2 is lcoc_core.ILookup$iface)){
+error_message$1=((map$9786_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "error-message", 1587404037, ), ));
 }else{
-error_message$1=((lcoc_core.ILookup.extensions(map$9788_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9788_$2, const lcoc_core.Keyword(null, "error-message", 1587404037, ), ));
+error_message$1=((lcoc_core.ILookup.extensions(map$9786_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9786_$2, const lcoc_core.Keyword(null, "error-message", 1587404037, ), ));
 }
 late final dc.dynamic search_results$1;
-if((map$9788_$2 is lcoc_core.ILookup$iface)){
-search_results$1=((map$9788_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "search-results", 941371274, ), ));
+if((map$9786_$2 is lcoc_core.ILookup$iface)){
+search_results$1=((map$9786_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "search-results", 941371274, ), ));
 }else{
-search_results$1=((lcoc_core.ILookup.extensions(map$9788_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9788_$2, const lcoc_core.Keyword(null, "search-results", 941371274, ), ));
+search_results$1=((lcoc_core.ILookup.extensions(map$9786_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9786_$2, const lcoc_core.Keyword(null, "search-results", 941371274, ), ));
 }
 late final dc.dynamic search_query$1;
-if((map$9788_$2 is lcoc_core.ILookup$iface)){
-search_query$1=((map$9788_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "search-query", 3980981005, ), ));
+if((map$9786_$2 is lcoc_core.ILookup$iface)){
+search_query$1=((map$9786_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "search-query", 3980981005, ), ));
 }else{
-search_query$1=((lcoc_core.ILookup.extensions(map$9788_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9788_$2, const lcoc_core.Keyword(null, "search-query", 3980981005, ), ));
+search_query$1=((lcoc_core.ILookup.extensions(map$9786_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9786_$2, const lcoc_core.Keyword(null, "search-query", 3980981005, ), ));
 }
 late final dc.dynamic recent_searches$1;
-if((map$9788_$2 is lcoc_core.ILookup$iface)){
-recent_searches$1=((map$9788_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "recent-searches", 1456002685, ), ));
+if((map$9786_$2 is lcoc_core.ILookup$iface)){
+recent_searches$1=((map$9786_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "recent-searches", 1456002685, ), ));
 }else{
-recent_searches$1=((lcoc_core.ILookup.extensions(map$9788_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9788_$2, const lcoc_core.Keyword(null, "recent-searches", 1456002685, ), ));
+recent_searches$1=((lcoc_core.ILookup.extensions(map$9786_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9786_$2, const lcoc_core.Keyword(null, "recent-searches", 1456002685, ), ));
 }
 late final dc.dynamic enabled_sources$1;
-if((map$9788_$2 is lcoc_core.ILookup$iface)){
-enabled_sources$1=((map$9788_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "enabled-sources", 2677619369, ), ));
+if((map$9786_$2 is lcoc_core.ILookup$iface)){
+enabled_sources$1=((map$9786_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "enabled-sources", 2677619369, ), ));
 }else{
-enabled_sources$1=((lcoc_core.ILookup.extensions(map$9788_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9788_$2, const lcoc_core.Keyword(null, "enabled-sources", 2677619369, ), ));
+enabled_sources$1=((lcoc_core.ILookup.extensions(map$9786_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9786_$2, const lcoc_core.Keyword(null, "enabled-sources", 2677619369, ), ));
 }
 late final dc.dynamic active_filters$1;
-if((map$9788_$2 is lcoc_core.ILookup$iface)){
-active_filters$1=((map$9788_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "active-filters", 2628296726, ), ));
+if((map$9786_$2 is lcoc_core.ILookup$iface)){
+active_filters$1=((map$9786_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "active-filters", 2628296726, ), ));
 }else{
-active_filters$1=((lcoc_core.ILookup.extensions(map$9788_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9788_$2, const lcoc_core.Keyword(null, "active-filters", 2628296726, ), ));
+active_filters$1=((lcoc_core.ILookup.extensions(map$9786_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9786_$2, const lcoc_core.Keyword(null, "active-filters", 2628296726, ), ));
 }
 late final dc.dynamic is_loading$1;
-if((map$9788_$2 is lcoc_core.ILookup$iface)){
-is_loading$1=((map$9788_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "is-loading", 3908007470, ), ));
+if((map$9786_$2 is lcoc_core.ILookup$iface)){
+is_loading$1=((map$9786_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "is-loading", 3908007470, ), ));
 }else{
-is_loading$1=((lcoc_core.ILookup.extensions(map$9788_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9788_$2, const lcoc_core.Keyword(null, "is-loading", 3908007470, ), ));
+is_loading$1=((lcoc_core.ILookup.extensions(map$9786_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9786_$2, const lcoc_core.Keyword(null, "is-loading", 3908007470, ), ));
 }
 late final dc.dynamic failed_sources$1;
-if((map$9788_$2 is lcoc_core.ILookup$iface)){
-failed_sources$1=((map$9788_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "failed-sources", 1025871632, ), ));
+if((map$9786_$2 is lcoc_core.ILookup$iface)){
+failed_sources$1=((map$9786_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "failed-sources", 1025871632, ), ));
 }else{
-failed_sources$1=((lcoc_core.ILookup.extensions(map$9788_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9788_$2, const lcoc_core.Keyword(null, "failed-sources", 1025871632, ), ));
+failed_sources$1=((lcoc_core.ILookup.extensions(map$9786_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9786_$2, const lcoc_core.Keyword(null, "failed-sources", 1025871632, ), ));
 }
 late final dc.dynamic last_searched$1;
-if((map$9788_$2 is lcoc_core.ILookup$iface)){
-last_searched$1=((map$9788_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "last-searched", 579106517, ), ));
+if((map$9786_$2 is lcoc_core.ILookup$iface)){
+last_searched$1=((map$9786_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "last-searched", 579106517, ), ));
 }else{
-last_searched$1=((lcoc_core.ILookup.extensions(map$9788_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9788_$2, const lcoc_core.Keyword(null, "last-searched", 579106517, ), ));
+last_searched$1=((lcoc_core.ILookup.extensions(map$9786_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9786_$2, const lcoc_core.Keyword(null, "last-searched", 579106517, ), ));
 }
 late final dc.dynamic theme_mode$1;
-if((map$9788_$2 is lcoc_core.ILookup$iface)){
-theme_mode$1=((map$9788_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "theme-mode", 48651601, ), ));
+if((map$9786_$2 is lcoc_core.ILookup$iface)){
+theme_mode$1=((map$9786_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "theme-mode", 48651601, ), ));
 }else{
-theme_mode$1=((lcoc_core.ILookup.extensions(map$9788_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9788_$2, const lcoc_core.Keyword(null, "theme-mode", 48651601, ), ));
+theme_mode$1=((lcoc_core.ILookup.extensions(map$9786_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9786_$2, const lcoc_core.Keyword(null, "theme-mode", 48651601, ), ));
 }
 final dc.bool is_dark$QMARK_$1=(lcoc_core.$EQ_.$_invoke$2(theme_mode$1, f_material.ThemeMode.dark, ));
 late final dc.dynamic $if_$2;
@@ -663,8 +663,8 @@ $if_$8=f_material.IconButton(icon: const f_material.Icon(f_material.Icons.clear,
 return null;
 }, );
 }
-final dc.List<dc.dynamic> fl$5=(dc.List<dc.dynamic>.filled(3, f_material.Expanded(child: f_material.TextField(controller: _2, decoration: f_material.InputDecoration(labelText: $if_$9, border: const f_material.OutlineInputBorder(), suffixIcon: $if_$8, ), textInputAction: f_material.TextInputAction.search, onChanged: (dc.dynamic p1$9787_$SHARP_$1, ){
-return (lcoc_core.swap$BANG_.$_invoke$4(lcold_state.app_state, lcoc_core.assoc, const lcoc_core.Keyword(null, "search-query", 3980981005, ), p1$9787_$SHARP_$1, ));
+final dc.List<dc.dynamic> fl$5=(dc.List<dc.dynamic>.filled(3, f_material.Expanded(child: f_material.TextField(controller: _2, decoration: f_material.InputDecoration(labelText: $if_$9, border: const f_material.OutlineInputBorder(), suffixIcon: $if_$8, ), textInputAction: f_material.TextInputAction.search, onChanged: (dc.dynamic p1$9785_$SHARP_$1, ){
+return (lcoc_core.swap$BANG_.$_invoke$4(lcold_state.app_state, lcoc_core.assoc, const lcoc_core.Keyword(null, "search-query", 3980981005, ), p1$9785_$SHARP_$1, ));
 }, onSubmitted: (dc.dynamic val$1, ){
 (lcold_state.perform_search$BANG_(val$1, ));
 return null;
