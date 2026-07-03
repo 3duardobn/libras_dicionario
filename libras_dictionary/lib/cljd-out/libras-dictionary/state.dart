@@ -38,7 +38,7 @@ return lcoc_core.PersistentHashSet(null, cast$1, -1, );
 
 // BEGIN app-state
 dc.dynamic app_state=(){
-final dc.List<dc.dynamic> fl$1=(dc.List<dc.dynamic>.filled(26, const lcoc_core.Keyword(null, "is-share-minimal", 2561305987, ), ));
+final dc.List<dc.dynamic> fl$1=(dc.List<dc.dynamic>.filled(28, const lcoc_core.Keyword(null, "is-share-minimal", 2561305987, ), ));
 (fl$1[1]=false);
 (fl$1[2]=const lcoc_core.Keyword(null, "error-message", 1587404037, ));
 (fl$1[3]=null);
@@ -63,11 +63,13 @@ final dc.List<dc.dynamic> fl$2=(dc.List<dc.dynamic>.filled(2, "Ambos", ));
 (fl$2[1]="Ambos");
 final lcoc_core.PersistentHashMap<dc.dynamic, dc.dynamic> cast$1=(lcoc_core.PersistentHashMap(null, lcoc_core.BitmapNode(1, 65536, 65536, fl$2, ), -1, ) as lcoc_core.PersistentHashMap<dc.dynamic, dc.dynamic>);
 (fl$1[21]=lcoc_core.PersistentHashSet(null, cast$1, -1, ));
-(fl$1[22]=const lcoc_core.Keyword(null, "favorites", 2198573211, ));
-(fl$1[23]=lcoc_core.$_EMPTY_VECTOR);
-(fl$1[24]=const lcoc_core.Keyword(null, "recent-searches", 1456002685, ));
+(fl$1[22]=const lcoc_core.Keyword(null, "show-youtube-button", 3823822520, ));
+(fl$1[23]=true);
+(fl$1[24]=const lcoc_core.Keyword(null, "favorites", 2198573211, ));
 (fl$1[25]=lcoc_core.$_EMPTY_VECTOR);
-final lcoc_core.Atom $1=(lcoc_core.atom.$_invoke$1(lcoc_core.PersistentHashMap(null, lcoc_core.BitmapNode(13, 677606952, 677606952, fl$1, ), -1, ), ));
+(fl$1[26]=const lcoc_core.Keyword(null, "recent-searches", 1456002685, ));
+(fl$1[27]=lcoc_core.$_EMPTY_VECTOR);
+final lcoc_core.Atom $1=(lcoc_core.atom.$_invoke$1(lcoc_core.PersistentHashMap(null, lcoc_core.BitmapNode(14, 694384168, 694384168, fl$1, ), -1, ), ));
 return $1;
 }();
 
@@ -285,6 +287,13 @@ share_min$1=or$6718_$AUTO_$2;
 }else{
 share_min$1=false;
 }
+final dc.bool? v$1=(p$1.getBool("show_youtube_button", ));
+late final dc.bool? show_yt$1;
+if((null == v$1)){
+show_yt$1=true;
+}else{
+show_yt$1=v$1;
+}
 final dc.List<dc.String>? or$6718_$AUTO_$3=(p$1.getStringList("recent_searches", ));
 late final dc.List<dc.dynamic>? recents$1;
 if((null != or$6718_$AUTO_$3)){
@@ -344,7 +353,7 @@ final dc.dynamic arg$1=(lcoc_core.into.$_invoke$3(lcoc_core.$_EMPTY_VECTOR, (lco
 final dc.List<dc.dynamic> fl$1=(dc.List<dc.dynamic>.filled(2, "Ambos", ));
 (fl$1[1]="Ambos");
 final lcoc_core.PersistentHashMap<dc.dynamic, dc.dynamic> cast$1=(lcoc_core.PersistentHashMap(null, lcoc_core.BitmapNode(1, 65536, 65536, fl$1, ), -1, ) as lcoc_core.PersistentHashMap<dc.dynamic, dc.dynamic>);
-return (lcoc_core.swap$BANG_.$_invoke_more$10(lcold_state.app_state, lcoc_core.assoc, const lcoc_core.Keyword(null, "theme-mode", 48651601, ), $if_$6, const lcoc_core.Keyword(null, "enabled-sources", 2677619369, ), $if_$5, const lcoc_core.Keyword(null, "is-share-minimal", 2561305987, ), share_min$1, const lcoc_core.Keyword(null, "recent-searches", 1456002685, ), [arg$2, const lcoc_core.Keyword(null, "favorites", 2198573211, ), arg$1, const lcoc_core.Keyword(null, "active-filters", 2628296726, ), lcoc_core.PersistentHashSet(null, cast$1, -1, ), ], ));
+return (lcoc_core.swap$BANG_.$_invoke_more$10(lcold_state.app_state, lcoc_core.assoc, const lcoc_core.Keyword(null, "theme-mode", 48651601, ), $if_$6, const lcoc_core.Keyword(null, "enabled-sources", 2677619369, ), $if_$5, const lcoc_core.Keyword(null, "is-share-minimal", 2561305987, ), share_min$1, const lcoc_core.Keyword(null, "show-youtube-button", 3823822520, ), [show_yt$1, const lcoc_core.Keyword(null, "recent-searches", 1456002685, ), arg$2, const lcoc_core.Keyword(null, "favorites", 2198573211, ), arg$1, const lcoc_core.Keyword(null, "active-filters", 2628296726, ), lcoc_core.PersistentHashSet(null, cast$1, -1, ), ], ));
 }
 
 // END load-settings!
@@ -623,6 +632,17 @@ return null;
 }
 
 // END set-share-minimal!
+
+// BEGIN set-show-youtube-button!
+dc.dynamic set_show_youtube_button$BANG_(dc.dynamic val$1, ){
+(lcoc_core.swap$BANG_.$_invoke$4(lcold_state.app_state, lcoc_core.assoc, const lcoc_core.Keyword(null, "show-youtube-button", 3823822520, ), val$1, ));
+(s_shared_preferences.SharedPreferences.getInstance().then((dc.dynamic p$1, ){
+return ((p$1 as s_shared_preferences.SharedPreferences).setBool("show_youtube_button", (val$1 as dc.bool), ));
+}, ));
+return null;
+}
+
+// END set-show-youtube-button!
 
 // BEGIN set-source-enabled!
 dc.dynamic set_source_enabled$BANG_(dc.dynamic source$1, dc.dynamic val$1, ){

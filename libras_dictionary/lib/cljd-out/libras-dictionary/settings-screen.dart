@@ -151,14 +151,24 @@ is_share_minimal$1=((map$9773_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lc
 }else{
 is_share_minimal$1=((lcoc_core.ILookup.extensions(map$9773_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9773_$2, const lcoc_core.Keyword(null, "is-share-minimal", 2561305987, ), ));
 }
+late final dc.dynamic show_youtube_button$1;
+if((map$9773_$2 is lcoc_core.ILookup$iface)){
+show_youtube_button$1=((map$9773_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "show-youtube-button", 3823822520, ), ));
+}else{
+show_youtube_button$1=((lcoc_core.ILookup.extensions(map$9773_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9773_$2, const lcoc_core.Keyword(null, "show-youtube-button", 3823822520, ), ));
+}
 final lcoc_core.VectorNode arg$5=lcoc_core.$_EMPTY_VECTOR.root;
-final dc.List<dc.dynamic> fl$3=(dc.List<dc.dynamic>.filled(17, f_material.ListTile(title: f_material.Text((lcold_strings.settings_search_section$v1 as dc.String), style: const f_material.TextStyle(fontWeight: f_material.FontWeight.bold, ), ), ), ));
-(fl$3[1]=f_material.SwitchListTile(title: f_material.Text((lcold_strings.settings_share_minimal$v1 as dc.String), ), subtitle: f_material.Text((lcold_strings.settings_share_minimal_sub$v1 as dc.String), ), value: (is_share_minimal$1 as dc.bool), onChanged: (dc.dynamic val$1, ){
-(lcold_state.set_share_minimal$BANG_(val$1, ));
+final dc.List<dc.dynamic> fl$3=(dc.List<dc.dynamic>.filled(18, f_material.ListTile(title: f_material.Text((lcold_strings.settings_search_section$v1 as dc.String), style: const f_material.TextStyle(fontWeight: f_material.FontWeight.bold, ), ), ), ));
+(fl$3[1]=f_material.SwitchListTile(title: f_material.Text((lcold_strings.settings_youtube_button$v1 as dc.String), ), subtitle: f_material.Text((lcold_strings.settings_youtube_button_sub$v1 as dc.String), ), value: (show_youtube_button$1 as dc.bool), onChanged: (dc.dynamic val$1, ){
+(lcold_state.set_show_youtube_button$BANG_(val$1, ));
 return null;
 }, ));
-(fl$3[2]=const f_material.Divider());
-(fl$3[3]=f_material.ListTile(title: f_material.Text((lcold_strings.settings_sources$v1 as dc.String), style: const f_material.TextStyle(fontWeight: f_material.FontWeight.bold, ), ), subtitle: f_material.Text((lcold_strings.settings_sources_sub$v1 as dc.String), ), ));
+(fl$3[2]=f_material.SwitchListTile(title: f_material.Text((lcold_strings.settings_share_minimal$v1 as dc.String), ), subtitle: f_material.Text((lcold_strings.settings_share_minimal_sub$v1 as dc.String), ), value: (is_share_minimal$1 as dc.bool), onChanged: (dc.dynamic val$2, ){
+(lcold_state.set_share_minimal$BANG_(val$2, ));
+return null;
+}, ));
+(fl$3[3]=const f_material.Divider());
+(fl$3[4]=f_material.ListTile(title: f_material.Text((lcold_strings.settings_sources$v1 as dc.String), style: const f_material.TextStyle(fontWeight: f_material.FontWeight.bold, ), ), subtitle: f_material.Text((lcold_strings.settings_sources_sub$v1 as dc.String), ), ));
 final lcoc_core.VectorNode arg$3=lcoc_core.$_EMPTY_VECTOR.root;
 final dc.List<dc.dynamic> fl$4=(dc.List<dc.dynamic>.filled(5, "INES", ));
 (fl$4[1]="UFV");
@@ -173,8 +183,8 @@ cast$1=(((o7140$1 as lcoc_core.ILookup$iface).$_lookup$2(source$1, source$1, )) 
 }else{
 cast$1=(((lcoc_core.ILookup.extensions(o7140$1, ) as lcoc_core.ILookup$ext).$_lookup$2(o7140$1, source$1, source$1, )) as dc.String);
 }
-return f_material.SwitchListTile(title: f_material.Text(cast$1, ), value: lcoc_core.contains$QMARK_(enabled_sources$1, source$1, ), secondary: f_material.Container(width: 24.0, height: 24.0, decoration: f_material.BoxDecoration(color: lcold_card.get_source_color(source$1, ), shape: f_material.BoxShape.circle, ), ), onChanged: (dc.dynamic val$2, ){
-(lcold_state.set_source_enabled$BANG_(source$1, val$2, ));
+return f_material.SwitchListTile(title: f_material.Text(cast$1, ), value: lcoc_core.contains$QMARK_(enabled_sources$1, source$1, ), secondary: f_material.Container(width: 24.0, height: 24.0, decoration: f_material.BoxDecoration(color: lcold_card.get_source_color(source$1, ), shape: f_material.BoxShape.circle, ), ), onChanged: (dc.dynamic val$3, ){
+(lcold_state.set_source_enabled$BANG_(source$1, val$3, ));
 return null;
 }, );
 }, lcoc_core.PersistentVector(null, 5, 5, arg$3, fl$4, -1, ), ));
@@ -186,17 +196,17 @@ casted$1=($1 as dc.List<f_material.Widget>);
 }else{
 casted$1=(($1 as dc.List).cast<f_material.Widget>());
 }
-(fl$3[4]=f_material.Column(mainAxisSize: f_material.MainAxisSize.min, children: casted$1, ));
-(fl$3[5]=const f_material.Divider());
-(fl$3[6]=f_material.ListTile(title: f_material.Text((lcold_strings.settings_credits$v1 as dc.String), style: const f_material.TextStyle(fontWeight: f_material.FontWeight.bold, ), ), subtitle: f_material.Text((lcold_strings.settings_credits_sub$v1 as dc.String), ), ));
-(fl$3[7]=lcolds_screen.build_source_credit("INES", "Instituto Nacional de Educação de Surdos", "http://dicionario.ines.gov.br/", "Os direitos autorais dos vídeos e imagens pertencem ao INES. O uso neste aplicativo é para fins educacionais e de acessibilidade.", ));
-(fl$3[8]=lcolds_screen.build_source_credit("Rede Surdos", "Universidade Federal do Ceará (UFC)", "https://redesurdosce.ufc.br/", "Conteúdo disponibilizado pela Rede Surdos da UFC. Todos os direitos reservados aos produtores originais.", ));
-(fl$3[9]=lcolds_screen.build_source_credit("UFV", "Universidade Federal de Viçosa", "https://sistemas.cead.ufv.br/capes/dicionario/", "Dicionário de Libras da UFV. Conteúdo protegido por direitos autorais da instituição.", ));
-(fl$3[10]=lcolds_screen.build_source_credit("Libras Acadêmica", "Universidade Federal Fluminense (UFF)", "https://librasacademica.uff.br/", "Glossário de Libras Acadêmica da UFF. Direitos reservados à UFF.", ));
-(fl$3[11]=lcolds_screen.build_source_credit("SpreadTheSign", "European Sign Language Centre", "https://www.spreadthesign.com/", "SpreadTheSign é um dicionário internacional. Os direitos pertencem ao European Sign Language Centre.", ));
-(fl$3[12]=lcolds_screen.build_source_credit("Ícone de Libras", "Wikimedia Commons", "https://en.wikipedia.org/wiki/File:Brazilian_Sign_Language_Symbol.svg", "O símbolo da Língua Brasileira de Sinais usado neste projeto está disponível sob a licença Creative Commons CC0 1.0 Universal Public Domain Dedication.", ));
-(fl$3[13]=const f_material.Divider());
-(fl$3[14]=f_material.ListTile(title: f_material.Text((lcold_strings.settings_license$v1 as dc.String), style: const f_material.TextStyle(fontWeight: f_material.FontWeight.bold, ), ), ));
+(fl$3[5]=f_material.Column(mainAxisSize: f_material.MainAxisSize.min, children: casted$1, ));
+(fl$3[6]=const f_material.Divider());
+(fl$3[7]=f_material.ListTile(title: f_material.Text((lcold_strings.settings_credits$v1 as dc.String), style: const f_material.TextStyle(fontWeight: f_material.FontWeight.bold, ), ), subtitle: f_material.Text((lcold_strings.settings_credits_sub$v1 as dc.String), ), ));
+(fl$3[8]=lcolds_screen.build_source_credit("INES", "Instituto Nacional de Educação de Surdos", "http://dicionario.ines.gov.br/", "Os direitos autorais dos vídeos e imagens pertencem ao INES. O uso neste aplicativo é para fins educacionais e de acessibilidade.", ));
+(fl$3[9]=lcolds_screen.build_source_credit("Rede Surdos", "Universidade Federal do Ceará (UFC)", "https://redesurdosce.ufc.br/", "Conteúdo disponibilizado pela Rede Surdos da UFC. Todos os direitos reservados aos produtores originais.", ));
+(fl$3[10]=lcolds_screen.build_source_credit("UFV", "Universidade Federal de Viçosa", "https://sistemas.cead.ufv.br/capes/dicionario/", "Dicionário de Libras da UFV. Conteúdo protegido por direitos autorais da instituição.", ));
+(fl$3[11]=lcolds_screen.build_source_credit("Libras Acadêmica", "Universidade Federal Fluminense (UFF)", "https://librasacademica.uff.br/", "Glossário de Libras Acadêmica da UFF. Direitos reservados à UFF.", ));
+(fl$3[12]=lcolds_screen.build_source_credit("SpreadTheSign", "European Sign Language Centre", "https://www.spreadthesign.com/", "SpreadTheSign é um dicionário internacional. Os direitos pertencem ao European Sign Language Centre.", ));
+(fl$3[13]=lcolds_screen.build_source_credit("Ícone de Libras", "Wikimedia Commons", "https://en.wikipedia.org/wiki/File:Brazilian_Sign_Language_Symbol.svg", "O símbolo da Língua Brasileira de Sinais usado neste projeto está disponível sob a licença Creative Commons CC0 1.0 Universal Public Domain Dedication.", ));
+(fl$3[14]=const f_material.Divider());
+(fl$3[15]=f_material.ListTile(title: f_material.Text((lcold_strings.settings_license$v1 as dc.String), style: const f_material.TextStyle(fontWeight: f_material.FontWeight.bold, ), ), ));
 final lcoc_core.VectorNode arg$4=lcoc_core.$_EMPTY_VECTOR.root;
 final dc.List<dc.dynamic> fl$5=(dc.List<dc.dynamic>.filled(6, f_material.Text((lcold_strings.settings_license_text$v1 as dc.String), ), ));
 (fl$5[1]=const f_material.SizedBox(height: 8.0, ));
@@ -216,13 +226,13 @@ casted$2=(lcoc_core.PersistentVector(null, 6, 5, arg$4, fl$5, -1, ) as dc.List<f
 }else{
 casted$2=((lcoc_core.PersistentVector(null, 6, 5, arg$4, fl$5, -1, ) as dc.List).cast<f_material.Widget>());
 }
-(fl$3[15]=f_material.Padding(padding: (const f_material.EdgeInsets.symmetric(horizontal: 16.0, )), child: f_material.Column(crossAxisAlignment: f_material.CrossAxisAlignment.start, children: casted$2, ), ));
-(fl$3[16]=const f_material.Divider());
+(fl$3[16]=f_material.Padding(padding: (const f_material.EdgeInsets.symmetric(horizontal: 16.0, )), child: f_material.Column(crossAxisAlignment: f_material.CrossAxisAlignment.start, children: casted$2, ), ));
+(fl$3[17]=const f_material.Divider());
 late final dc.List<f_material.Widget> casted$3;
-if((lcoc_core.PersistentVector(null, 17, 5, arg$5, fl$3, -1, ) is dc.List<f_material.Widget>)){
-casted$3=(lcoc_core.PersistentVector(null, 17, 5, arg$5, fl$3, -1, ) as dc.List<f_material.Widget>);
+if((lcoc_core.PersistentVector(null, 18, 5, arg$5, fl$3, -1, ) is dc.List<f_material.Widget>)){
+casted$3=(lcoc_core.PersistentVector(null, 18, 5, arg$5, fl$3, -1, ) as dc.List<f_material.Widget>);
 }else{
-casted$3=((lcoc_core.PersistentVector(null, 17, 5, arg$5, fl$3, -1, ) as dc.List).cast<f_material.Widget>());
+casted$3=((lcoc_core.PersistentVector(null, 18, 5, arg$5, fl$3, -1, ) as dc.List).cast<f_material.Widget>());
 }
 final f_material.Scaffold child$9287_$AUTO_$1=f_material.Scaffold(appBar: f_material.AppBar(title: f_material.Text((lcold_strings.settings_title$v1 as dc.String), ), ), body: f_material.ListView(children: casted$3, ), );
 if(f_foundation.kDebugMode){

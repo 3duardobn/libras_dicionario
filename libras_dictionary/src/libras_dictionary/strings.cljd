@@ -30,6 +30,8 @@
 (def glosa-label "Tradução Libras (Glosa):")
 (def settings-title "Configurações")
 (def settings-search-section "Configurações de Busca")
+(def settings-youtube-button "Botão de busca no YouTube")
+(def settings-youtube-button-sub "Mostra o botão para buscar sinais no aplicativo do YouTube")
 (def settings-share-minimal "Texto de compartilhamento mínimo")
 (def settings-share-minimal-sub "Envia apenas a palavra e o link ao compartilhar")
 (def settings-sources "Fontes de Pesquisa")

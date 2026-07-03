@@ -502,6 +502,12 @@ search_results$1=((map$9786_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc
 }else{
 search_results$1=((lcoc_core.ILookup.extensions(map$9786_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9786_$2, const lcoc_core.Keyword(null, "search-results", 941371274, ), ));
 }
+late final dc.dynamic show_youtube_button$1;
+if((map$9786_$2 is lcoc_core.ILookup$iface)){
+show_youtube_button$1=((map$9786_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "show-youtube-button", 3823822520, ), ));
+}else{
+show_youtube_button$1=((lcoc_core.ILookup.extensions(map$9786_$2, ) as lcoc_core.ILookup$ext).$_lookup$1(map$9786_$2, const lcoc_core.Keyword(null, "show-youtube-button", 3823822520, ), ));
+}
 late final dc.dynamic search_query$1;
 if((map$9786_$2 is lcoc_core.ILookup$iface)){
 search_query$1=((map$9786_$2 as lcoc_core.ILookup$iface).$_lookup$1(const lcoc_core.Keyword(null, "search-query", 3980981005, ), ));
@@ -635,16 +641,21 @@ casted$1=(lcoc_core.PersistentVector(null, 3, 5, arg$3, fl$3, -1, ) as dc.List<f
 }else{
 casted$1=((lcoc_core.PersistentVector(null, 3, 5, arg$3, fl$3, -1, ) as dc.List).cast<f_material.Widget>());
 }
+late final f_material.FloatingActionButton? $if_$24;
+if(((false != show_youtube_button$1) && (null != show_youtube_button$1))){
 late final dc.String? $if_$7;
 if((null != lcold_strings.youtube_tooltip$v1)){
 $if_$7=(lcold_strings.youtube_tooltip$v1 as dc.String);
 }else{
 $if_$7=null;
 }
-final f_material.FloatingActionButton $3=(f_material.FloatingActionButton.extended(onPressed: (){
+$if_$24=(f_material.FloatingActionButton.extended(onPressed: (){
 (lcold_state.open_youtube_search$BANG_(search_query$1, ));
 return null;
 }, backgroundColor: const f_material.Color(4279592384, ), icon: const f_material.Icon(f_material.Icons.play_circle_filled, color: f_material.Colors.white, ), label: f_material.Text((lcold_strings.youtube_button$v1 as dc.String), style: const f_material.TextStyle(color: f_material.Colors.white, fontWeight: f_material.FontWeight.bold, ), ), tooltip: $if_$7, ));
+}else{
+$if_$24=null;
+}
 final lcoc_core.VectorNode arg$9=lcoc_core.$_EMPTY_VECTOR.root;
 final lcoc_core.VectorNode arg$4=lcoc_core.$_EMPTY_VECTOR.root;
 late final dc.String? $if_$9;
@@ -773,14 +784,20 @@ cast$1=(lcold_strings.type_to_search$v1 as dc.String);
 cast$1=(lcold_strings.no_results_for(search_query$1, ) as dc.String);
 }
 (fl$7[2]=f_material.Text(cast$1, style: f_material.TextStyle(fontSize: 16.0, fontWeight: f_material.FontWeight.w500, color: f_material.Colors.grey.shade600, ), textAlign: f_material.TextAlign.center, ));
-late final dc.bool $if_$18;
+late final dc.bool and$6836_$AUTO_$4;
 if(lcoc_string.blank$QMARK_(search_query$1, )){
-$if_$18=false;
+and$6836_$AUTO_$4=false;
 }else{
-$if_$18=true;
+and$6836_$AUTO_$4=true;
+}
+late final dc.dynamic $if_$18;
+if(and$6836_$AUTO_$4){
+$if_$18=show_youtube_button$1;
+}else{
+$if_$18=and$6836_$AUTO_$4;
 }
 late final f_material.Column? $if_$19;
-if($if_$18){
+if(((false != $if_$18) && (null != $if_$18))){
 final lcoc_core.VectorNode arg$7=lcoc_core.$_EMPTY_VECTOR.root;
 final dc.List<dc.dynamic> fl$8=(dc.List<dc.dynamic>.filled(2, f_material.Padding(padding: (const f_material.EdgeInsets.only(top: 8.0, )), child: f_material.Text((lcold_strings.not_found_dictionaries$v1 as dc.String), style: f_material.TextStyle(fontSize: 14.0, color: f_material.Colors.grey.shade500, ), textAlign: f_material.TextAlign.center, ), ), ));
 final lcoc_core.VectorNode arg$6=lcoc_core.$_EMPTY_VECTOR.root;
@@ -808,16 +825,16 @@ $if_$19=f_material.Column(mainAxisSize: f_material.MainAxisSize.min, children: c
 $if_$19=null;
 }
 (fl$7[3]=$if_$19);
-final dc.bool and$6836_$AUTO_$4=lcoc_string.blank$QMARK_(search_query$1, );
+final dc.bool and$6836_$AUTO_$5=lcoc_string.blank$QMARK_(search_query$1, );
 late final dc.dynamic $if_$20;
-if(and$6836_$AUTO_$4){
+if(and$6836_$AUTO_$5){
 if((recent_searches$1 is lcoc_core.ISeqable$iface)){
 $if_$20=((recent_searches$1 as lcoc_core.ISeqable$iface).$_seq$0());
 }else{
 $if_$20=((lcoc_core.ISeqable.extensions(recent_searches$1, ) as lcoc_core.ISeqable$ext).$_seq$0(recent_searches$1, ));
 }
 }else{
-$if_$20=and$6836_$AUTO_$4;
+$if_$20=and$6836_$AUTO_$5;
 }
 late final dc.dynamic $if_$21;
 if(((false != $if_$20) && (null != $if_$20))){
@@ -864,7 +881,7 @@ casted$7=($2 as dc.List<f_material.Widget>);
 }else{
 casted$7=(($2 as dc.List).cast<f_material.Widget>());
 }
-final f_material.Scaffold child$9287_$AUTO_$1=f_material.Scaffold(resizeToAvoidBottomInset: false, appBar: f_material.AppBar(title: f_material.Text((lcold_strings.app_title$v1 as dc.String), ), actions: casted$1, ), floatingActionButton: $3, body: f_material.Column(children: casted$7, ), );
+final f_material.Scaffold child$9287_$AUTO_$1=f_material.Scaffold(resizeToAvoidBottomInset: false, appBar: f_material.AppBar(title: f_material.Text((lcold_strings.app_title$v1 as dc.String), ), actions: casted$1, ), floatingActionButton: $if_$24, body: f_material.Column(children: casted$7, ), );
 if(f_foundation.kDebugMode){
 final dc.dynamic test$2=(lcoc_flutter.get_of.$_invoke$2(context$9100_$AUTO_$3, const lcoc_core.Keyword("cljd.flutter", "repl", 2765474413, ), ));
 if(((false != test$2) && (null != test$2))){
@@ -1014,7 +1031,7 @@ if(f_foundation.kDebugMode){
 final dc.dynamic test$1=(lcoc_flutter.get_of.$_invoke$2(context$9100_$AUTO_$1, const lcoc_core.Keyword("cljd.flutter", "repl", 2765474413, ), ));
 if(((false != test$1) && (null != test$1))){
 final dc.List<dc.dynamic> fl$3=(dc.List<dc.dynamic>.filled(6, const lcoc_core.Keyword(null, "line", 878494669, ), ));
-(fl$3[1]=334);
+(fl$3[1]=335);
 (fl$3[2]=const lcoc_core.Keyword(null, "column", 3362807310, ));
 (fl$3[3]=4);
 (fl$3[4]=const lcoc_core.Keyword(null, "ns", 1494845879, ));

@@ -165,6 +165,16 @@ dc.dynamic settings_website$v1="Site do projeto";
 
 // END settings-website
 
+// BEGIN settings-youtube-button
+dc.dynamic settings_youtube_button$v1="Botão de busca no YouTube";
+
+// END settings-youtube-button
+
+// BEGIN settings-youtube-button-sub
+dc.dynamic settings_youtube_button_sub$v1="Mostra o botão para buscar sinais no aplicativo do YouTube";
+
+// END settings-youtube-button-sub
+
 // BEGIN share-sign
 dc.dynamic share_sign$v1="Compartilhar sinal";
 

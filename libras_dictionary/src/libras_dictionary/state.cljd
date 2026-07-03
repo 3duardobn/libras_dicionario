@@ -28,7 +28,8 @@
     :favorites []
     :enabled-sources all-sources
     :active-filters #{"Ambos"}
-    :is-share-minimal false}))
+    :is-share-minimal false
+    :show-youtube-button true}))
 
 ;; --- Playback Coordination ---
 ;; Only one video plays at a time: starting any player pauses the previous one.
@@ -121,6 +122,8 @@
         is-dark (or (.getBool p "isDark") false)
         enabled-sources (.getStringList p "enabled_sources")
         share-min (or (.getBool p "is_share_minimal") false)
+        show-yt (let [v (.getBool p "show_youtube_button")]
+                  (if (nil? v) true v))
         recents (or (.getStringList p "recent_searches") [])
         favorites (or (.getStringList p "favorites") [])]
     (swap! app-state assoc
@@ -129,6 +132,7 @@
                               (set (seq enabled-sources))
                               all-sources)
            :is-share-minimal share-min
+           :show-youtube-button show-yt
            :recent-searches (vec recents)
            :favorites (into [] (keep json->item) favorites)
            :active-filters #{"Ambos"})))
@@ -146,6 +150,13 @@
   (-> (prefs.SharedPreferences/getInstance)
       (.then (fn [p]
                (.setBool ^prefs/SharedPreferences p "is_share_minimal" val))))
+  nil)
+
+(defn set-show-youtube-button! [val]
+  (swap! app-state assoc :show-youtube-button val)
+  (-> (prefs.SharedPreferences/getInstance)
+      (.then (fn [p]
+               (.setBool ^prefs/SharedPreferences p "show_youtube_button" val))))
   nil)
 
 (defn set-source-enabled! [source val]

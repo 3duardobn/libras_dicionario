@@ -159,7 +159,7 @@
    :watch [state st/app-state]
    (let [{:keys [theme-mode is-loading search-results search-query last-searched
                  active-filters enabled-sources error-message failed-sources
-                 recent-searches]} state
+                 recent-searches show-youtube-button]} state
          is-dark? (= theme-mode mat.ThemeMode/dark)
          ranked (st/rank-results search-results (or last-searched search-query ""))
          display-results (vec
@@ -197,14 +197,15 @@
                                         ctx
                                         (mat/MaterialPageRoute. .builder (fn [ctx] (settings/settings-screen))))
                                        nil))])
-      .floatingActionButton (mat/FloatingActionButton.extended
-                             .onPressed (fn []
-                                          (st/open-youtube-search! search-query)
-                                          nil)
-                             .backgroundColor (mat/Color. 0xFF1565C0)
-                             .icon (mat/Icon. mat.Icons/play_circle_filled .color mat.Colors/white)
-                             .label (mat/Text. s/youtube-button .style (mat/TextStyle. .color mat.Colors/white .fontWeight mat.FontWeight/bold))
-                             .tooltip s/youtube-tooltip)
+      .floatingActionButton (when show-youtube-button
+                              (mat/FloatingActionButton.extended
+                               .onPressed (fn []
+                                            (st/open-youtube-search! search-query)
+                                            nil)
+                               .backgroundColor (mat/Color. 0xFF1565C0)
+                               .icon (mat/Icon. mat.Icons/play_circle_filled .color mat.Colors/white)
+                               .label (mat/Text. s/youtube-button .style (mat/TextStyle. .color mat.Colors/white .fontWeight mat.FontWeight/bold))
+                               .tooltip s/youtube-tooltip))
       .body (mat/Column.
              .children
              (remove nil?
@@ -293,7 +294,7 @@
                                                        .fontWeight mat.FontWeight/w500
                                                        .color (.-shade600 mat.Colors/grey))
                                                .textAlign mat.TextAlign/center)
-                                              (when (not (str/blank? search-query))
+                                              (when (and (not (str/blank? search-query)) show-youtube-button)
                                                 (mat/Column.
                                                  .mainAxisSize mat.MainAxisSize/min
                                                  .children

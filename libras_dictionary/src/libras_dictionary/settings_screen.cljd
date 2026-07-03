@@ -32,12 +32,19 @@
   (f/widget
    :context ctx
    :watch [state st/app-state]
-   (let [{:keys [enabled-sources is-share-minimal]} state]
+   (let [{:keys [enabled-sources is-share-minimal show-youtube-button]} state]
      (mat/Scaffold.
       .appBar (mat/AppBar. .title (mat/Text. s/settings-title))
       .body (mat/ListView.
              .children
              [(mat/ListTile. .title (mat/Text. s/settings-search-section .style (mat/TextStyle. .fontWeight mat.FontWeight/bold)))
+              (mat/SwitchListTile.
+               .title (mat/Text. s/settings-youtube-button)
+               .subtitle (mat/Text. s/settings-youtube-button-sub)
+               .value show-youtube-button
+               .onChanged (fn [val]
+                            (st/set-show-youtube-button! val)
+                            nil))
               (mat/SwitchListTile.
                .title (mat/Text. s/settings-share-minimal)
                .subtitle (mat/Text. s/settings-share-minimal-sub)
