@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      HAS_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 != '' }}
 
     steps:
       - name: Checkout
@@ -43,6 +45,16 @@ jobs:
           key: clojure-${{ hashFiles('libras_dictionary/deps.edn') }}
           restore-keys: clojure-
 
+      - name: Check tag matches pubspec version
+        working-directory: libras_dictionary
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PUBSPEC=$(sed -n 's/^version: \([0-9.]*\)+.*/\1/p' pubspec.yaml)
+          if [ "$TAG" != "$PUBSPEC" ]; then
+            echo "::error::Tag v$TAG does not match pubspec.yaml version $PUBSPEC — update pubspec.yaml (and bump the +N build number) before tagging."
+            exit 1
+          fi
+
       - name: Get Flutter dependencies
         working-directory: libras_dictionary
         run: flutter pub get
@@ -51,9 +63,31 @@ jobs:
         working-directory: libras_dictionary
         run: clj -M:cljd compile
 
+      # Release signing: set the repository secrets KEYSTORE_BASE64
+      # (base64 of the .jks), KEYSTORE_PASSWORD, KEY_ALIAS and KEY_PASSWORD.
+      # Without them the build falls back to debug signing (APKs still built,
+      # but not suitable for Play Store upload).
+      - name: Set up release keystore
+        if: ${{ env.HAS_KEYSTORE == 'true' }}
+        working-directory: libras_dictionary/android
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > release.jks
+          cat > key.properties <<EOF
+          storeFile=$(pwd)/release.jks
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          EOF
+
       - name: Build APK
         working-directory: libras_dictionary
         run: flutter build apk --release --split-per-abi
+
+      - name: Build App Bundle (Play Store)
+        working-directory: libras_dictionary
+        run: flutter build appbundle --release
 
       - name: Stage release artifacts
         run: |
@@ -62,11 +96,15 @@ jobs:
             arch=$(basename "$apk" | sed 's/app-\(.*\)-release.apk/\1/')
             cp "$apk" "libras_dicionario-${VERSION}-${arch}.apk"
           done
+          cp libras_dictionary/build/app/outputs/bundle/release/app-release.aab \
+             "libras_dicionario-${VERSION}.aab"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: libras_dicionario-${{ github.ref_name }}-*.apk
+          files: |
+            libras_dicionario-${{ github.ref_name }}-*.apk
+            libras_dicionario-${{ github.ref_name }}.aab
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
