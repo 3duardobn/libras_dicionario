@@ -1,0 +1,173 @@
+(ns libras-dictionary.player
+  "Video widgets: embedded YouTube player and native mp4 (chewie).
+  Both register with the playback coordinator so only one video plays
+  at a time. The mp4 player initializes lazily, on first tap."
+  (:require [cljd.flutter :as f]
+            [libras-dictionary.api :as api]
+            [libras-dictionary.state :as st]
+            [libras-dictionary.strings :as s]
+            ["package:flutter/material.dart" :as mat]
+            ["package:video_player/video_player.dart" :as v-p]
+            ["package:chewie/chewie.dart" :as chewie]
+            ["package:youtube_player_flutter/youtube_player_flutter.dart" :as yt-p]))
+
+(defn youtube-player-widget [youtube-id]
+  (f/widget
+   :managed [player-state
+             (let [replaying? (atom false)
+                   error? (atom false)
+                   controller (yt-p/YoutubePlayerController.
+                               .initialVideoId youtube-id
+                               .flags (yt-p/YoutubePlayerFlags.
+                                       .autoPlay false
+                                       .mute false
+                                       .loop false
+                                       .hideControls false
+                                       .hideThumbnail true
+                                       .controlsVisibleAtStart true
+                                       .disableDragSeek true))
+                   listener (fn []
+                              (let [value ^yt-p/YoutubePlayerValue (.-value controller)]
+                                (when (not= (.-errorCode value) 0)
+                                  (reset! error? true))
+                                (when (= (.-playerState value) yt-p.PlayerState/playing)
+                                  (st/claim-playback! controller (fn [] (.pause controller))))
+                                (when (.-isReady value)
+                                  (let [position ^Duration (.-position value)
+                                        duration ^Duration (-> value .-metaData .-duration)]
+                                    (if (and (> (.-inMilliseconds duration) 0)
+                                             (>= (.-inMilliseconds position) (- (.-inMilliseconds duration) 300))
+                                             (not @replaying?))
+                                      (do
+                                        (reset! replaying? true)
+                                        (.seekTo controller (Duration. .seconds 0))
+                                        (Future/delayed (Duration. .milliseconds 600)
+                                                        (fn [] (reset! replaying? false))))
+                                      (when (and (= (.-playerState value) yt-p.PlayerState/ended)
+                                                 (not @replaying?))
+                                        (reset! replaying? true)
+                                        (.seekTo controller (Duration. .seconds 0))
+                                        (.play controller)
+                                        (Future/delayed (Duration. .milliseconds 600)
+                                                        (fn [] (reset! replaying? false)))))))))]
+               (.addListener controller listener)
+               {:controller controller :listener listener :error? error?})
+             :refresh-on youtube-id
+             :dispose ((fn [state]
+                         (let [c (:controller state)
+                               l (:listener state)]
+                           (st/release-playback! c)
+                           (.removeListener ^yt-p/YoutubePlayerController c l)
+                           (.dispose ^yt-p/YoutubePlayerController c))))]
+   :watch [has-error (:error? player-state)]
+   (if has-error
+     (mat/Padding.
+      .padding (mat/EdgeInsets.all 16.0)
+      .child (mat/Column.
+              .mainAxisSize mat.MainAxisSize/min
+              .children
+              [(mat/Text. s/youtube-error
+                          .style (mat/TextStyle. .color mat.Colors/red)
+                          .textAlign mat.TextAlign/center)
+               (mat/TextButton.
+                .onPressed (fn []
+                             (st/launch-url! (str "https://www.youtube.com/watch?v=" youtube-id))
+                             nil)
+                .child (mat/Text. s/open-in-youtube))]))
+     (yt-p/YoutubePlayer.
+      .controller (:controller player-state)
+      .showVideoProgressIndicator true))))
+
+(defn- chewie-player [video-url]
+  (f/widget
+   :managed [state-atom
+             (let [state (atom {:video-controller nil
+                                :chewie-controller nil
+                                :play-listener nil
+                                :is-loading true
+                                :has-error false})
+                   init-player! (fn [url-str]
+                                  (try
+                                    (let [uri (Uri/parse url-str)
+                                          ts (.toString (.-millisecondsSinceEpoch (DateTime/now)))
+                                          query-params (assoc (into {} (.-queryParameters uri)) "v" ts)
+                                          final-uri (.replace uri .queryParameters query-params)
+                                          vc (v-p/VideoPlayerController.networkUrl final-uri
+                                                                                   .httpHeaders {"User-Agent" "Mozilla/5.0" "Accept" "*/*"})]
+                                      (await (.initialize vc))
+                                      (await (.setVolume vc 0.0))
+                                      (let [play-listener (fn []
+                                                            (when (-> vc .-value .-isPlaying)
+                                                              (st/claim-playback! vc (fn [] (.pause vc)))))
+                                            cc (chewie/ChewieController.
+                                                .videoPlayerController vc
+                                                ;; autoPlay here is user-initiated: this widget
+                                                ;; only mounts after the play placeholder is tapped.
+                                                .autoPlay true
+                                                .looping true
+                                                .aspectRatio (-> vc .-value .-aspectRatio)
+                                                .showControls true
+                                                .errorBuilder (fn [ctx err-msg]
+                                                                (mat/Center. .child (mat/Text. err-msg .style (mat/TextStyle. .color mat.Colors/white)))))]
+                                        (.addListener vc play-listener)
+                                        (swap! state assoc :video-controller vc :play-listener play-listener :chewie-controller cc :is-loading false)))
+                                    (catch Exception e
+                                      (api/log "Error initializing video:" e)
+                                      (swap! state assoc :has-error true :is-loading false))))]
+               (init-player! video-url)
+               state)
+             :refresh-on video-url
+             :dispose ((fn [state-atom]
+                         (let [state @state-atom]
+                           (when-let [vc ^v-p/VideoPlayerController (:video-controller state)]
+                             (st/release-playback! vc)
+                             (when-let [l (:play-listener state)]
+                               (.removeListener vc l))
+                             (.dispose vc))
+                           (when-let [cc ^chewie/ChewieController (:chewie-controller state)]
+                             (.dispose cc)))))]
+   :watch [state state-atom]
+   :let [{:keys [video-controller chewie-controller is-loading has-error]} state]
+   (cond
+     has-error
+     (mat/Padding.
+      .padding (mat/EdgeInsets.all 16.0)
+      .child (mat/Center.
+              .child (mat/Text. s/video-error
+                                .style (mat/TextStyle. .color mat.Colors/red)
+                                .textAlign mat.TextAlign/center)))
+
+     (and (not is-loading) chewie-controller video-controller (-> ^v-p/VideoPlayerController video-controller .-value .-isInitialized))
+     (mat/AspectRatio.
+      .aspectRatio (-> ^v-p/VideoPlayerController video-controller .-value .-aspectRatio)
+      .child (chewie/Chewie. .controller chewie-controller))
+
+     :else
+     (mat/Padding.
+      .padding (mat/EdgeInsets.all 16.0)
+      .child (mat/Center. .child (mat/CircularProgressIndicator.))))))
+
+(defn chewie-video-widget
+  "mp4 player with lazy init: shows a lightweight play placeholder and
+  only creates the network video controller after the user taps it, so
+  expanding a card stays instant and costs no bandwidth."
+  [video-url]
+  (f/widget
+   :watch [activated (atom false) :as activated?]
+   (if activated
+     (chewie-player video-url)
+     (mat/AspectRatio.
+      .aspectRatio (/ 16 9)
+      .child (mat/Semantics.
+              .label s/play-video
+              .button true
+              .child (mat/InkWell.
+                      .onTap (fn [] (reset! activated? true) nil)
+                      .child (mat/Container.
+                              .decoration (mat/BoxDecoration.
+                                           .color (.withOpacity mat.Colors/black 0.75)
+                                           .borderRadius (mat/BorderRadius.circular 8))
+                              .child (mat/Center.
+                                      .child (mat/Icon. mat.Icons/play_circle_filled
+                                                        .size 64
+                                                        .color mat.Colors/white)))))))))

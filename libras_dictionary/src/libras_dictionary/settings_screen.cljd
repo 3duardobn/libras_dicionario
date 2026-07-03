@@ -1,0 +1,101 @@
+(ns libras-dictionary.settings-screen
+  (:require [cljd.flutter :as f]
+            [libras-dictionary.card :as card]
+            [libras-dictionary.state :as st]
+            [libras-dictionary.strings :as s]
+            ["package:flutter/material.dart" :as mat]))
+
+(defn- build-source-credit [name org url copyright]
+  (mat/Padding.
+   .padding (mat/EdgeInsets.symmetric .horizontal 16.0 .vertical 8.0)
+   .child (mat/Column.
+           .crossAxisAlignment mat.CrossAxisAlignment/start
+           .children
+           [(mat/Text. name .style (mat/TextStyle. .fontWeight mat.FontWeight/bold))
+            (mat/Text. org .style (mat/TextStyle. .fontSize 12))
+            (mat/InkWell.
+             .onTap (fn []
+                      (st/launch-url! url)
+                      nil)
+             .child (mat/Text. url .style (mat/TextStyle. .color (mat/Color. 0xFF1565C0) .fontSize 12)))
+            (mat/Text. copyright .style (mat/TextStyle. .fontSize 11 .fontStyle mat.FontStyle/italic))
+            (mat/SizedBox. .height 8)])))
+
+(def ^:private source-labels
+  {"INES" "INES (Dicionário INES)"
+   "UFV" "UFV (Universidade Federal de Viçosa)"
+   "RedeSurdos" "Rede Surdos (UFC)"
+   "LibrasAcademicaUFF" "Libras Acadêmica (UFF)"
+   "SpreadTheSign" "SpreadTheSign"})
+
+(defn settings-screen []
+  (f/widget
+   :context ctx
+   :watch [state st/app-state]
+   (let [{:keys [enabled-sources is-share-minimal]} state]
+     (mat/Scaffold.
+      .appBar (mat/AppBar. .title (mat/Text. s/settings-title))
+      .body (mat/ListView.
+             .children
+             [(mat/ListTile. .title (mat/Text. s/settings-search-section .style (mat/TextStyle. .fontWeight mat.FontWeight/bold)))
+              (mat/SwitchListTile.
+               .title (mat/Text. s/settings-share-minimal)
+               .subtitle (mat/Text. s/settings-share-minimal-sub)
+               .value is-share-minimal
+               .onChanged (fn [val]
+                            (st/set-share-minimal! val)
+                            nil))
+              (mat/Divider.)
+              (mat/ListTile.
+               .title (mat/Text. s/settings-sources .style (mat/TextStyle. .fontWeight mat.FontWeight/bold))
+               .subtitle (mat/Text. s/settings-sources-sub))
+              (mat/Column.
+               .mainAxisSize mat.MainAxisSize/min
+               .children
+               (map
+                (fn [source]
+                  (mat/SwitchListTile.
+                   .title (mat/Text. (get source-labels source source))
+                   .value (contains? enabled-sources source)
+                   .secondary (mat/Container.
+                               .width 24
+                               .height 24
+                               .decoration (mat/BoxDecoration.
+                                            .color (card/get-source-color source)
+                                            .shape mat.BoxShape/circle))
+                   .onChanged (fn [val]
+                                (st/set-source-enabled! source val)
+                                nil)))
+                ["INES" "UFV" "RedeSurdos" "LibrasAcademicaUFF" "SpreadTheSign"]))
+              (mat/Divider.)
+              (mat/ListTile.
+               .title (mat/Text. s/settings-credits .style (mat/TextStyle. .fontWeight mat.FontWeight/bold))
+               .subtitle (mat/Text. s/settings-credits-sub))
+              (build-source-credit "INES" "Instituto Nacional de Educação de Surdos" "http://dicionario.ines.gov.br/" "Os direitos autorais dos vídeos e imagens pertencem ao INES. O uso neste aplicativo é para fins educacionais e de acessibilidade.")
+              (build-source-credit "Rede Surdos" "Universidade Federal do Ceará (UFC)" "https://redesurdosce.ufc.br/" "Conteúdo disponibilizado pela Rede Surdos da UFC. Todos os direitos reservados aos produtores originais.")
+              (build-source-credit "UFV" "Universidade Federal de Viçosa" "https://sistemas.cead.ufv.br/capes/dicionario/" "Dicionário de Libras da UFV. Conteúdo protegido por direitos autorais da instituição.")
+              (build-source-credit "Libras Acadêmica" "Universidade Federal Fluminense (UFF)" "https://librasacademica.uff.br/" "Glossário de Libras Acadêmica da UFF. Direitos reservados à UFF.")
+              (build-source-credit "SpreadTheSign" "European Sign Language Centre" "https://www.spreadthesign.com/" "SpreadTheSign é um dicionário internacional. Os direitos pertencem ao European Sign Language Centre.")
+              (build-source-credit "Ícone de Libras" "Wikimedia Commons" "https://en.wikipedia.org/wiki/File:Brazilian_Sign_Language_Symbol.svg" "O símbolo da Língua Brasileira de Sinais usado neste projeto está disponível sob a licença Creative Commons CC0 1.0 Universal Public Domain Dedication.")
+              (mat/Divider.)
+              (mat/ListTile. .title (mat/Text. s/settings-license .style (mat/TextStyle. .fontWeight mat.FontWeight/bold)))
+              (mat/Padding.
+               .padding (mat/EdgeInsets.symmetric .horizontal 16.0)
+               .child (mat/Column.
+                       .crossAxisAlignment mat.CrossAxisAlignment/start
+                       .children
+                       [(mat/Text. s/settings-license-text)
+                        (mat/SizedBox. .height 8)
+                        (mat/InkWell.
+                         .onTap (fn []
+                                  (st/launch-url! "https://github.com/3duardobn/libras_dicionario")
+                                  nil)
+                         .child (mat/Text. s/settings-github .style (mat/TextStyle. .color (mat/Color. 0xFF1565C0) .decoration mat.TextDecoration/underline)))
+                        (mat/SizedBox. .height 8)
+                        (mat/InkWell.
+                         .onTap (fn []
+                                  (st/launch-url! "https://edbn.dev/projetos/libras-dicionario/")
+                                  nil)
+                         .child (mat/Text. s/settings-website .style (mat/TextStyle. .color (mat/Color. 0xFF1565C0) .decoration mat.TextDecoration/underline)))
+                        (mat/SizedBox. .height 16)]))
+              (mat/Divider.)])))))

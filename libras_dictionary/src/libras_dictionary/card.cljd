@@ -1,0 +1,139 @@
+(ns libras-dictionary.card
+  "Result card for one dictionary entry."
+  (:require [cljd.flutter :as f]
+            [clojure.string :as str]
+            [libras-dictionary.player :as player]
+            [libras-dictionary.state :as st]
+            [libras-dictionary.strings :as s]
+            ["package:flutter/material.dart" :as mat]
+            ["package:flutter_html/flutter_html.dart" :as html]))
+
+(defn ^mat/Color get-source-color [source]
+  (case source
+    "INES" (.-shade600 mat.Colors/blue)
+    "RedeSurdos" (.-shade600 mat.Colors/green)
+    "UFV" (.-shade600 mat.Colors/red)
+    "LibrasAcademicaUFF" (.-shade600 mat.Colors/purple)
+    "SpreadTheSign" (.-shade600 mat.Colors/orange)
+    (.-shade600 mat.Colors/grey)))
+
+(defn- html-section [label data italic?]
+  (mat/Column.
+   .crossAxisAlignment mat.CrossAxisAlignment/start
+   .children
+   [(mat/Text. label .style (mat/TextStyle. .fontWeight mat.FontWeight/bold .fontSize 16))
+    (mat/SizedBox. .height 4)
+    (html/Html.
+     .data data
+     .style {"body" (if italic?
+                      (html/Style.
+                       .margin html.Margins/zero
+                       .padding html.HtmlPaddings/zero
+                       .fontSize (html/FontSize. 16.0)
+                       .fontStyle mat.FontStyle/italic)
+                      (html/Style.
+                       .margin html.Margins/zero
+                       .padding html.HtmlPaddings/zero
+                       .fontSize (html/FontSize. 16.0)))})
+    (mat/SizedBox. .height 12)]))
+
+(defn dictionary-item-card [item]
+  (f/widget
+   :watch [is-expanded (atom false) :as expanded?
+           app st/app-state]
+   :let [is-favorite (boolean (some #(= [(:title %) (:link %) (:source %)]
+                                        [(:title item) (:link item) (:source item)])
+                                    (:favorites app)))]
+   (mat/Card.
+    .margin (mat/EdgeInsets.symmetric .horizontal 16 .vertical 8)
+    .elevation 3
+    .shape (mat/RoundedRectangleBorder. .borderRadius (mat/BorderRadius.circular 12))
+    .clipBehavior mat.Clip/antiAlias
+    .child (mat/Semantics.
+            .label (str (:title item) ", " (:source item))
+            .hint (if is-expanded s/collapse-hint s/expand-hint)
+            .child (mat/InkWell.
+                    .onTap #(swap! expanded? not)
+                    .child (mat/Column.
+                    .mainAxisSize mat.MainAxisSize/min
+                    .crossAxisAlignment mat.CrossAxisAlignment/stretch
+                    .children
+                    [(mat/Container.
+                      .padding (mat/EdgeInsets.symmetric .horizontal 16.0 .vertical 12.0)
+                      .color (get-source-color (:source item))
+                      .child (mat/Row.
+                              .mainAxisAlignment mat.MainAxisAlignment/spaceBetween
+                              .children
+                              (cond-> [(mat/Expanded.
+                                        .child (mat/Text. (str (:title item) " (" (:source item) ")")
+                                                          .style (mat/TextStyle. .fontWeight mat.FontWeight/bold .fontSize 20 .color mat.Colors/white)))]
+                                true
+                                (conj (mat/IconButton.
+                                       .icon (mat/Icon. (if is-favorite mat.Icons/star mat.Icons/star_border) .color mat.Colors/white)
+                                       .tooltip (if is-favorite s/favorite-remove s/favorite-add)
+                                       .onPressed
+                                       (fn []
+                                         (st/toggle-favorite! item)
+                                         nil)))
+
+                                (:link item)
+                                (conj (mat/IconButton.
+                                       .icon (mat/Icon. mat.Icons/share .color mat.Colors/white)
+                                       .tooltip s/share-sign
+                                       .onPressed
+                                       (fn []
+                                         (st/share-item! item)
+                                         nil)))
+                                true
+                                (conj (mat/Icon. (if is-expanded mat.Icons/expand_less mat.Icons/expand_more) .color mat.Colors/white)))))
+                     (if is-expanded
+                       (mat/Padding.
+                        .padding (mat/EdgeInsets.all 16)
+                        .child (mat/Column.
+                                .crossAxisAlignment mat.CrossAxisAlignment/start
+                                .children
+                                (cond-> []
+                                  (not (str/blank? (:description item)))
+                                  (conj (html-section s/description-label (:description item) false))
+
+                                  (not (str/blank? (:exemplo item)))
+                                  (conj (html-section s/example-label (:exemplo item) true))
+
+                                  (not (str/blank? (:libras item)))
+                                  (conj (mat/Column.
+                                         .crossAxisAlignment mat.CrossAxisAlignment/start
+                                         .children
+                                         [(mat/Text. s/glosa-label .style (mat/TextStyle. .fontWeight mat.FontWeight/bold .fontSize 16))
+                                          (mat/SizedBox. .height 4)
+                                          (mat/Container.
+                                           .padding (mat/EdgeInsets.all 8.0)
+                                           .decoration (mat/BoxDecoration.
+                                                        .color (.-shade100 mat.Colors/grey)
+                                                        .borderRadius (mat/BorderRadius.circular 8)
+                                                        .border (mat/Border.all .color (.-shade300 mat.Colors/grey)))
+                                           .child (mat/Text.
+                                                   (:libras item)
+                                                   .style (mat/TextStyle.
+                                                           .fontFamily "monospace"
+                                                           .fontSize 14.0
+                                                           .fontWeight mat.FontWeight/w600)))
+                                          (mat/SizedBox. .height 12)]))
+
+                                  (not (str/blank? (:youtube-id item)))
+                                  (conj (mat/Padding.
+                                         .padding (mat/EdgeInsets.only .bottom 16.0)
+                                         .child (player/youtube-player-widget (:youtube-id item))))
+
+                                  (not (str/blank? (:image-url item)))
+                                  (conj (mat/Padding.
+                                         .padding (mat/EdgeInsets.only .bottom 16.0)
+                                         .child (mat/Image.network
+                                                 (:image-url item)
+                                                 .fit mat.BoxFit/contain
+                                                 .errorBuilder (fn [ctx err stack] (mat/SizedBox.shrink)))))
+
+                                  (not (str/blank? (:video-url item)))
+                                  (conj (mat/Padding.
+                                         .padding (mat/EdgeInsets.only .bottom 16.0)
+                                         .child (player/chewie-video-widget (:video-url item)))))))
+                       (mat/SizedBox.shrink))]))))))
