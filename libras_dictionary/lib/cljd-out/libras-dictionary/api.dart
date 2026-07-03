@@ -440,7 +440,7 @@ lcoc_core.IFn$iface fetch_url=lcold_api.ifn_fetch_url_M__18695hm$1(null, );
 
 // BEGIN fetch-wordpress
 dc.dynamic fetch_wordpress(dc.dynamic search_url$1, dc.dynamic query$1, dc.dynamic item_$GT_dict$1, ) async {
-final dc.dynamic body$1=(await (lcold_api.fetch_url.$_invoke$1((lcoc_core.str.$_invoke$2(search_url$1, (dc.Uri.encodeQueryComponent((query$1 as dc.String), )), )), )));
+final dc.dynamic body$1=(await (lcold_api.fetch_url.$_invoke$1((lcoc_core.str.$_invoke$3(search_url$1, (dc.Uri.encodeQueryComponent((query$1 as dc.String), )), "&per_page=100", )), )));
 final dc.dynamic data$1=(d_convert.json.decode((body$1 as dc.String), ));
 final dc.RegExp regex$1=(lcold_api.word_bound_regex(query$1, ) as dc.RegExp);
 return (lcoc_core.into.$_invoke$3(lcoc_core.$_EMPTY_VECTOR, (lcoc_core.comp.$_invoke$2((lcoc_core.filter.$_invoke$1((dc.dynamic item$1, ){

@@ -154,7 +154,9 @@
   "Searches a WordPress REST API and maps matching posts through
   `item->dict`. Throws on network/HTTP failure."
   [search-url query item->dict]
-  (let [body (await (fetch-url (str search-url (Uri/encodeQueryComponent query))))
+  ;; per_page=100: the default of 10 hides exact-title posts that rank
+  ;; below content-only matches in WP's full-text relevance order.
+  (let [body (await (fetch-url (str search-url (Uri/encodeQueryComponent query) "&per_page=100")))
         data (json/json.decode body)
         ^RegExp regex (word-bound-regex query)]
     (into []
