@@ -2,7 +2,7 @@ name: libras_dictionary
 description: "Dicionário de Libras."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.3+2
 
 environment:
   sdk: ^3.11.0
