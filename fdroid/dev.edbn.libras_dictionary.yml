@@ -1,0 +1,47 @@
+# F-Droid metadata for Dicionário Libras.
+#
+# This file is NOT read from this repo — F-Droid metadata lives in their
+# fdroiddata repository. To submit:
+#   1. Fork https://gitlab.com/fdroid/fdroiddata
+#   2. Copy this file to metadata/dev.edbn.libras_dictionary.yml
+#   3. Open a Merge Request
+# After the MR is merged, new `v*` tags are picked up automatically
+# (AutoUpdateMode: Version). App descriptions/icon come from the
+# fastlane/metadata structure committed in this repo.
+
+Categories:
+  - Science & Education
+  - Reading
+License: CC0-1.0
+AuthorName: Eduardo Barroso Nunes
+SourceCode: https://github.com/3duardobn/libras_dicionario
+IssueTracker: https://github.com/3duardobn/libras_dicionario/issues
+Changelog: https://github.com/3duardobn/libras_dicionario/releases
+
+AutoName: Dicionário Libras
+
+RepoType: git
+Repo: https://github.com/3duardobn/libras_dicionario.git
+
+Builds:
+  - versionName: 1.0.3
+    versionCode: 2
+    commit: v1.0.3
+    subdir: libras_dictionary
+    submodules: false
+    gradle:
+      - yes
+    srclibs:
+      - flutter@3.41.7
+    output: build/app/outputs/flutter-apk/app-release.apk
+    build:
+      # lib/cljd-out (Dart generated from ClojureDart) is committed,
+      # so no Clojure toolchain is needed to build.
+      - $$flutter$$/bin/flutter config --no-analytics
+      - $$flutter$$/bin/flutter pub get
+      - $$flutter$$/bin/flutter build apk --release
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v[0-9.]+$
+CurrentVersion: 1.0.3
+CurrentVersionCode: 2
