@@ -131,6 +131,22 @@ git push origin main v1.0.1
    captura do device) e um banner "feature graphic" 1024×500.
 9. Revisão do Google leva de horas a alguns dias.
 
+### Publicação automática na Play Store (após a primeira manual)
+
+O workflow de release publica o `.aab` automaticamente na faixa de **teste
+interno** quando estes pré-requisitos existem:
+
+1. Primeira versão enviada manualmente no Play Console (obrigatório pelo
+   Google — cria a ficha do app).
+2. Assinatura de release configurada no CI (secrets `KEYSTORE_*`).
+3. Conta de serviço: Play Console → *Configurações → Acesso à API* → criar
+   conta de serviço no Google Cloud, conceder papel "Gerente de lançamentos"
+   no Play Console, baixar o JSON e salvá-lo como secret
+   `PLAY_SERVICE_ACCOUNT_JSON`.
+
+Sem os secrets, a etapa é pulada silenciosamente. A promoção de teste interno
+para produção continua manual, no Console.
+
 ### Conformidade com o YouTube (importante)
 
 - O app **não** usa APIs não oficiais do YouTube: a busca no YouTube abre o
@@ -155,8 +171,10 @@ Clojure).
 2. **Tag de release**: o F-Droid constrói a partir de tags `v*` (mesmo fluxo do
    CI). Garanta que `lib/cljd-out/` esteja atualizado no commit da tag
    (rode `clj -M:cljd compile` antes de tagear se mudou `.cljd`).
-3. **Submissão**: fork de <https://gitlab.com/fdroid/fdroiddata>, crie
-   `metadata/dev.edbn.libras_dictionary.yml`:
+3. **Submissão**: fork de <https://gitlab.com/fdroid/fdroiddata>, copie o
+   arquivo pronto [`fdroid/dev.edbn.libras_dictionary.yml`](../../fdroid/dev.edbn.libras_dictionary.yml)
+   (na raiz deste repositório) para `metadata/dev.edbn.libras_dictionary.yml`
+   no fork e abra um Merge Request. Conteúdo de referência:
 
    ```yaml
    Categories:

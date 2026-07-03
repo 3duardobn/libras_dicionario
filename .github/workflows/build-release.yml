@@ -13,6 +13,7 @@ jobs:
       contents: write
     env:
       HAS_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 != '' }}
+      HAS_PLAY_SA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON != '' }}
 
     steps:
       - name: Checkout
@@ -98,6 +99,23 @@ jobs:
           done
           cp libras_dictionary/build/app/outputs/bundle/release/app-release.aab \
              "libras_dicionario-${VERSION}.aab"
+
+      # Publishes the AAB to the Play Store *internal testing* track.
+      # Requires: (1) the app already created in the Play Console with a
+      # first AAB uploaded manually, (2) release signing configured
+      # (KEYSTORE_BASE64 etc. — Play rejects debug-signed bundles), and
+      # (3) the PLAY_SERVICE_ACCOUNT_JSON secret (service account with
+      # "Release manager" access in Play Console). Promotion from the
+      # internal track to production stays manual, in the Console.
+      - name: Publish to Play Store (internal track)
+        if: ${{ env.HAS_PLAY_SA == 'true' && env.HAS_KEYSTORE == 'true' }}
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: dev.edbn.libras_dictionary
+          releaseFiles: libras_dictionary/build/app/outputs/bundle/release/app-release.aab
+          track: internal
+          status: completed
 
       - name: Create Release
         uses: softprops/action-gh-release@v2

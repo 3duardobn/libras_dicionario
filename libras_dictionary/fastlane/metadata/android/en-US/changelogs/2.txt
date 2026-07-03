@@ -1,0 +1,7 @@
+First ClojureDart release:
+• Favorites and recent searches
+• Autocomplete from the INES vocabulary
+• Offline INES cache
+• Official YouTube player without duplicated controls
+• Only one video plays at a time
+• Failing sources no longer break search
