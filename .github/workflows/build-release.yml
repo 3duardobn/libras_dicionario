@@ -61,7 +61,7 @@ jobs:
 
       - name: Compile ClojureDart → Dart
         working-directory: libras_dictionary
-        run: clj -M:cljd compile
+        run: clojure -M:cljd compile
 
       # Release signing: set the repository secrets KEYSTORE_BASE64
       # (base64 of the .jks), KEYSTORE_PASSWORD, KEY_ALIAS and KEY_PASSWORD.
