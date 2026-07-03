@@ -18,7 +18,7 @@
   [youtube-id]
   (f/widget
    :managed [player-state
-             (let [error? (atom false)
+             (let [error? (atom nil)
                    controller (yt-i.YoutubePlayerController/fromVideoId
                                .videoId youtube-id
                                .autoPlay false
@@ -29,7 +29,8 @@
                    subscription (.listen (.-stream controller)
                                          (fn [^yt-i/YoutubePlayerValue value]
                                            (when (not= (.-error value) yt-i.YoutubeError/none)
-                                             (reset! error? true))
+                                             (api/log "YouTube player error for" youtube-id ":" (.-error value))
+                                             (reset! error? (.-error value)))
                                            (when (= (.-playerState value) yt-i.PlayerState/playing)
                                              (st/claim-playback! controller (fn [] (.pauseVideo controller))))))]
                {:controller controller :subscription subscription :error? error?})
@@ -39,14 +40,14 @@
                            (st/release-playback! c)
                            (.cancel ^async/StreamSubscription (:subscription state))
                            (.close ^yt-i/YoutubePlayerController c))))]
-   :watch [has-error (:error? player-state)]
-   (if has-error
+   :watch [player-error (:error? player-state)]
+   (if player-error
      (mat/Padding.
       .padding (mat/EdgeInsets.all 16.0)
       .child (mat/Column.
               .mainAxisSize mat.MainAxisSize/min
               .children
-              [(mat/Text. s/youtube-error
+              [(mat/Text. (str s/youtube-error " (" player-error ")")
                           .style (mat/TextStyle. .color mat.Colors/red)
                           .textAlign mat.TextAlign/center)
                (mat/TextButton.

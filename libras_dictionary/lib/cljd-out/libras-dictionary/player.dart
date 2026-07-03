@@ -275,11 +275,12 @@ return lcoc_flutter.ResourceState(null, null, );
 dc.dynamic $_init_state$1(dc.dynamic state$9179_$AUTO_$1, ){
 final lcoc_flutter.ResourceState doto$7753_$AUTO_$1=(state$9179_$AUTO_$1 as lcoc_flutter.ResourceState);
 doto$7753_$AUTO_$1.k=_0;
-final lcoc_core.Atom error$QMARK_$1=(lcoc_core.atom.$_invoke$1(false, ));
+final lcoc_core.Atom error$QMARK_$1=(lcoc_core.atom.$_invoke$1(null, ));
 final y_youtube_player_iframe.YoutubePlayerController controller$1=(y_youtube_player_iframe.YoutubePlayerController.fromVideoId(videoId: (_0 as dc.String), autoPlay: false, params: const y_youtube_player_iframe.YoutubePlayerParams(showControls: true, showFullscreenButton: true, strictRelatedVideos: true, ), ));
 final da.StreamSubscription<y_youtube_player_iframe.YoutubePlayerValue> subscription$1=(controller$1.stream.listen((dc.dynamic value$1, ){
 if((lcoc_core.not$EQ_.$_invoke$2((value$1 as y_youtube_player_iframe.YoutubePlayerValue).error, y_youtube_player_iframe.YoutubeError.none, ))){
-(lcoc_core.reset$BANG_(error$QMARK_$1, true, ));
+(lcold_api.log.$_invoke$4("YouTube player error for", _0, ":", (value$1 as y_youtube_player_iframe.YoutubePlayerValue).error, ));
+(lcoc_core.reset$BANG_(error$QMARK_$1, (value$1 as y_youtube_player_iframe.YoutubePlayerValue).error, ));
 }else{
 }
 if((lcoc_core.$EQ_.$_invoke$2((value$1 as y_youtube_player_iframe.YoutubePlayerValue).playerState, y_youtube_player_iframe.PlayerState.playing, ))){
@@ -330,11 +331,12 @@ final dc.dynamic c$2=(const lcoc_core.Keyword(null, "controller", 1089430550, ).
 ((const lcoc_core.Keyword(null, "subscription", 1175229482, ).$_invoke$1(state$2, ) as da.StreamSubscription).cancel());
 return ((c$2 as y_youtube_player_iframe.YoutubePlayerController).close());
 }((state$9179_$AUTO_$7.resource as lcoc_core.PersistentHashMap), ));
-final lcoc_core.Atom error$QMARK_$5=(lcoc_core.atom.$_invoke$1(false, ));
+final lcoc_core.Atom error$QMARK_$5=(lcoc_core.atom.$_invoke$1(null, ));
 final y_youtube_player_iframe.YoutubePlayerController controller$5=(y_youtube_player_iframe.YoutubePlayerController.fromVideoId(videoId: (_0 as dc.String), autoPlay: false, params: const y_youtube_player_iframe.YoutubePlayerParams(showControls: true, showFullscreenButton: true, strictRelatedVideos: true, ), ));
 final da.StreamSubscription<y_youtube_player_iframe.YoutubePlayerValue> subscription$5=(controller$5.stream.listen((dc.dynamic value$5, ){
 if((lcoc_core.not$EQ_.$_invoke$2((value$5 as y_youtube_player_iframe.YoutubePlayerValue).error, y_youtube_player_iframe.YoutubeError.none, ))){
-(lcoc_core.reset$BANG_(error$QMARK_$5, true, ));
+(lcold_api.log.$_invoke$4("YouTube player error for", _0, ":", (value$5 as y_youtube_player_iframe.YoutubePlayerValue).error, ));
+(lcoc_core.reset$BANG_(error$QMARK_$5, (value$5 as y_youtube_player_iframe.YoutubePlayerValue).error, ));
 }else{
 }
 if((lcoc_core.$EQ_.$_invoke$2((value$5 as y_youtube_player_iframe.YoutubePlayerValue).playerState, y_youtube_player_iframe.PlayerState.playing, ))){
@@ -503,7 +505,7 @@ if(f_foundation.kDebugMode){
 final dc.dynamic test$2=(lcoc_flutter.get_of.$_invoke$2(context$9100_$AUTO_$2, const lcoc_core.Keyword("cljd.flutter", "repl", 2765474413, ), ));
 if(((false != test$2) && (null != test$2))){
 final dc.List<dc.dynamic> fl$9=(dc.List<dc.dynamic>.filled(6, const lcoc_core.Keyword(null, "line", 878494669, ), ));
-(fl$9[1]=113);
+(fl$9[1]=114);
 (fl$9[2]=const lcoc_core.Keyword(null, "column", 3362807310, ));
 (fl$9[3]=4);
 (fl$9[4]=const lcoc_core.Keyword(null, "ns", 1494845879, ));
@@ -644,7 +646,7 @@ if(f_foundation.kDebugMode){
 final dc.dynamic test$1=(lcoc_flutter.get_of.$_invoke$2(context$9100_$AUTO_$1, const lcoc_core.Keyword("cljd.flutter", "repl", 2765474413, ), ));
 if(((false != test$1) && (null != test$1))){
 final dc.List<dc.dynamic> fl$3=(dc.List<dc.dynamic>.filled(6, const lcoc_core.Keyword(null, "line", 878494669, ), ));
-(fl$3[1]=139);
+(fl$3[1]=140);
 (fl$3[2]=const lcoc_core.Keyword(null, "column", 3362807310, ));
 (fl$3[3]=4);
 (fl$3[4]=const lcoc_core.Keyword(null, "ns", 1494845879, ));
@@ -723,11 +725,11 @@ final lcoc_flutter.WatchState state$9123_$AUTO_$1=(state$9129_$AUTO_$1 as lcoc_f
 final dc.dynamic subscribable$9124_$AUTO_$1=(const lcoc_core.Keyword(null, "error?", 4039413826, ).$_invoke$1(_1, ));
 state$9123_$AUTO_$1.k=_1;
 state$9123_$AUTO_$1.subscribable=subscribable$9124_$AUTO_$1;
-dc.dynamic update$9126_$AUTO_$1(dc.dynamic has_error$3, ){
-if((lcoc_core.$EQ_.$_invoke$2(has_error$3, state$9123_$AUTO_$1.latest, ))){
+dc.dynamic update$9126_$AUTO_$1(dc.dynamic player_error$3, ){
+if((lcoc_core.$EQ_.$_invoke$2(player_error$3, state$9123_$AUTO_$1.latest, ))){
 return null;
 }
-return (state$9123_$AUTO_$1.$_invoke$1(has_error$3, ));
+return (state$9123_$AUTO_$1.$_invoke$1(player_error$3, ));
 }
 late final dc.dynamic sub$9127_$AUTO_$1;
 if((subscribable$9124_$AUTO_$1 is lcoc_flutter.Subscribable$iface)){
@@ -767,12 +769,12 @@ return state$9129_$AUTO_$3;
 
 dc.dynamic $_build$2(dc.dynamic state$9129_$AUTO_$4, dc.dynamic ctx$9130_$AUTO_$1, ){
 final lcoc_flutter.WatchState state$9123_$AUTO_$2=(state$9129_$AUTO_$4 as lcoc_flutter.WatchState);
-final dc.dynamic has_error$4=state$9123_$AUTO_$2.latest;
+final dc.dynamic player_error$4=state$9123_$AUTO_$2.latest;
 final f_widgets.BuildContext context$9100_$AUTO_$2=(ctx$9130_$AUTO_$1 as f_widgets.BuildContext);
 late final f_material.SingleChildRenderObjectWidget child$9287_$AUTO_$1;
-if(((false != has_error$4) && (null != has_error$4))){
+if(((false != player_error$4) && (null != player_error$4))){
 final lcoc_core.VectorNode arg$3=lcoc_core.$_EMPTY_VECTOR.root;
-final dc.List<dc.dynamic> fl$6=(dc.List<dc.dynamic>.filled(2, f_material.Text((lcold_strings.youtube_error$v1 as dc.String), style: const f_material.TextStyle(color: f_material.Colors.red, ), textAlign: f_material.TextAlign.center, ), ));
+final dc.List<dc.dynamic> fl$6=(dc.List<dc.dynamic>.filled(2, f_material.Text((lcoc_core.str.$_invoke$4(lcold_strings.youtube_error$v1, " (", player_error$4, ")", )), style: const f_material.TextStyle(color: f_material.Colors.red, ), textAlign: f_material.TextAlign.center, ), ));
 (fl$6[1]=f_material.TextButton(onPressed: (){
 (lcold_state.launch_url$BANG_((lcoc_core.str.$_invoke$2("https://www.youtube.com/watch?v=", _4, )), ));
 return null;
@@ -791,13 +793,13 @@ if(f_foundation.kDebugMode){
 final dc.dynamic test$1=(lcoc_flutter.get_of.$_invoke$2(context$9100_$AUTO_$2, const lcoc_core.Keyword("cljd.flutter", "repl", 2765474413, ), ));
 if(((false != test$1) && (null != test$1))){
 final dc.List<dc.dynamic> fl$7=(dc.List<dc.dynamic>.filled(6, const lcoc_core.Keyword(null, "line", 878494669, ), ));
-(fl$7[1]=43);
+(fl$7[1]=44);
 (fl$7[2]=const lcoc_core.Keyword(null, "column", 3362807310, ));
 (fl$7[3]=4);
 (fl$7[4]=const lcoc_core.Keyword(null, "ns", 1494845879, ));
 (fl$7[5]=(lcoc_core.symbol.$_invoke$2(null, "libras-dictionary.player", )));
 return lcoc_flutter.ReplPointWidget(lcoc_core.PersistentHashMap(null, lcoc_core.BitmapNode(3, 8413184, 8413184, fl$7, ), -1, ), (){
-return (lcoc_core.apply.$_invoke$2(lcoc_core.hash_map, <dc.dynamic>[(lcoc_core.symbol.$_invoke$2(null, "___9128__auto__", )), this, (lcoc_core.symbol.$_invoke$2(null, "youtube-id", )), _4, (lcoc_core.symbol.$_invoke$2(null, "player-state", )), _1, (lcoc_core.symbol.$_invoke$2(null, "ctx__9130__auto__", )), ctx$9130_$AUTO_$1, (lcoc_core.symbol.$_invoke$2(null, "state__9129__auto__", )), state$9129_$AUTO_$4, (lcoc_core.symbol.$_invoke$2(null, "state__9123__auto__", )), state$9123_$AUTO_$2, (lcoc_core.symbol.$_invoke$2(null, "context__9100__auto__", )), context$9100_$AUTO_$2, (lcoc_core.symbol.$_invoke$2(null, "___9178__auto__", )), _3, (lcoc_core.symbol.$_invoke$2(null, "has-error", )), has_error$4, (lcoc_core.symbol.$_invoke$2(null, "ctx__9180__auto__", )), _0, (lcoc_core.symbol.$_invoke$2(null, "state__9179__auto__", )), _2, ], ));
+return (lcoc_core.apply.$_invoke$2(lcoc_core.hash_map, <dc.dynamic>[(lcoc_core.symbol.$_invoke$2(null, "___9128__auto__", )), this, (lcoc_core.symbol.$_invoke$2(null, "player-error", )), player_error$4, (lcoc_core.symbol.$_invoke$2(null, "youtube-id", )), _4, (lcoc_core.symbol.$_invoke$2(null, "player-state", )), _1, (lcoc_core.symbol.$_invoke$2(null, "ctx__9130__auto__", )), ctx$9130_$AUTO_$1, (lcoc_core.symbol.$_invoke$2(null, "state__9129__auto__", )), state$9129_$AUTO_$4, (lcoc_core.symbol.$_invoke$2(null, "state__9123__auto__", )), state$9123_$AUTO_$2, (lcoc_core.symbol.$_invoke$2(null, "context__9100__auto__", )), context$9100_$AUTO_$2, (lcoc_core.symbol.$_invoke$2(null, "___9178__auto__", )), _3, (lcoc_core.symbol.$_invoke$2(null, "ctx__9180__auto__", )), _0, (lcoc_core.symbol.$_invoke$2(null, "state__9179__auto__", )), _2, ], ));
 }, child$9287_$AUTO_$1, );
 }
 return child$9287_$AUTO_$1;
@@ -820,11 +822,11 @@ if((doto$7753_$AUTO_$8 is lcoc_flutter.Subscribable$iface)){
 final dc.dynamic subscribable$9124_$AUTO_$2=(const lcoc_core.Keyword(null, "error?", 4039413826, ).$_invoke$1(_1, ));
 state$9123_$AUTO_$3.k=_1;
 state$9123_$AUTO_$3.subscribable=subscribable$9124_$AUTO_$2;
-dc.dynamic update$9126_$AUTO_$2(dc.dynamic has_error$5, ){
-if((lcoc_core.$EQ_.$_invoke$2(has_error$5, state$9123_$AUTO_$3.latest, ))){
+dc.dynamic update$9126_$AUTO_$2(dc.dynamic player_error$5, ){
+if((lcoc_core.$EQ_.$_invoke$2(player_error$5, state$9123_$AUTO_$3.latest, ))){
 return null;
 }
-return (state$9123_$AUTO_$3.$_invoke$1(has_error$5, ));
+return (state$9123_$AUTO_$3.$_invoke$1(player_error$5, ));
 }
 late final dc.dynamic sub$9127_$AUTO_$2;
 if((subscribable$9124_$AUTO_$2 is lcoc_flutter.Subscribable$iface)){
