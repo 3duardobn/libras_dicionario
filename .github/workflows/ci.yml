@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    name: Compile, analyze and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.7'
+          channel: stable
+          cache: true
+
+      - name: Install Clojure CLI
+        uses: DeLaGuardo/setup-clojure@13
+        with:
+          cli: latest
+
+      - name: Cache Clojure deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+          key: clojure-${{ hashFiles('libras_dictionary/deps.edn') }}
+          restore-keys: clojure-
+
+      - name: Get Flutter dependencies
+        working-directory: libras_dictionary
+        run: flutter pub get
+
+      - name: Compile ClojureDart → Dart
+        working-directory: libras_dictionary
+        run: clj -M:cljd compile
+
+      - name: Test
+        working-directory: libras_dictionary
+        run: clj -M:cljd test
+
+      # `cljd test` injects test imports into the app's generated files;
+      # a final compile restores the clean (committable) state before the
+      # sync check below.
+      - name: Normalize generated Dart
+        working-directory: libras_dictionary
+        run: clj -M:cljd compile
+
+      # Generated Dart (lib/cljd-out and test/cljd-out) is committed so
+      # F-Droid can build without the Clojure toolchain — fail if it
+      # drifted from the .cljd sources.
+      - name: Check generated Dart is committed and in sync
+        working-directory: libras_dictionary
+        run: |
+          git add -N lib/cljd-out test/cljd-out
+          if ! git diff --exit-code -- lib/cljd-out test/cljd-out; then
+            echo "::error::Generated Dart is out of sync with src/**.cljd — run 'clj -M:cljd test && clj -M:cljd compile' and commit the result."
+            exit 1
+          fi
+
+      # Generated cljd-out code triggers benign warnings; only errors fail.
+      - name: Analyze
+        working-directory: libras_dictionary
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
