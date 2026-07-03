@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package com.example.libras_dictionary
+package dev.edbn.libras_dictionary
 
 import android.content.Intent
 import io.flutter.embedding.android.FlutterActivity
@@ -21,7 +21,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "com.example.libras_dictionary/share"
+    private val CHANNEL = "dev.edbn.libras_dictionary/share"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

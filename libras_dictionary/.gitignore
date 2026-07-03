@@ -47,10 +47,4 @@ app.*.map.json
 # ClojureDart generated
 .clojuredart/
 .cpcache/
-lib/cljd-out/
 
-# ClojureDart
-.cpcache/
-.clojuredart/
-lib/cljd-out/
-test/cljd-out/
