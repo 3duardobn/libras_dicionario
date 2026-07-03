@@ -1,0 +1,20 @@
+Dicionário de Língua Brasileira de Sinais (Libras) que reúne várias fontes públicas em um só lugar.
+
+Digite uma palavra em português e o aplicativo busca o sinal correspondente em:
+
+• INES — Instituto Nacional de Educação de Surdos
+• Rede Surdos — Universidade Federal do Ceará (UFC)
+• Dicionário de Libras da UFV — Universidade Federal de Viçosa
+• Libras Acadêmica — Universidade Federal Fluminense (UFF)
+• SpreadTheSign — European Sign Language Centre
+
+Os resultados mostram o vídeo do sinal, descrição, exemplos de uso e a glosa (tradução em Libras), quando disponíveis. Também é possível abrir uma busca no YouTube para encontrar sinais que não estejam nos dicionários.
+
+Recursos:
+• Busca simultânea em várias fontes, com filtros por fonte
+• Reprodução de vídeos dos sinais dentro do aplicativo
+• Tema claro e escuro
+• Compartilhamento de sinais
+• Sem anúncios, sem rastreamento, sem coleta de dados pessoais
+
+O aplicativo é software livre (CC0). Os direitos dos vídeos e conteúdos pertencem às instituições de origem; o uso é para fins educacionais e de acessibilidade.

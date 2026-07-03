@@ -1,0 +1,20 @@
+Brazilian Sign Language (Libras) dictionary that brings several public sources together in one place.
+
+Type a word in Portuguese and the app searches for the corresponding sign in:
+
+• INES — National Institute of Deaf Education (Brazil)
+• Rede Surdos — Federal University of Ceará (UFC)
+• UFV Libras Dictionary — Federal University of Viçosa
+• Libras Acadêmica — Fluminense Federal University (UFF)
+• SpreadTheSign — European Sign Language Centre
+
+Results show the sign video, description, usage examples and the Libras gloss when available. You can also open a YouTube search for signs not found in the dictionaries.
+
+Features:
+• Simultaneous search across sources, with per-source filters
+• In-app sign video playback
+• Light and dark theme
+• Sign sharing
+• No ads, no tracking, no personal data collection
+
+The app is free software (CC0). Video and content rights belong to the original institutions; usage is for educational and accessibility purposes.
