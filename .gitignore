@@ -136,3 +136,6 @@ flutter/
 .lsp/
 libras_dictionary/.clojuredart/
 libras_dictionary/.cpcache/
+
+# Local tool state
+.claude/settings.local.json
