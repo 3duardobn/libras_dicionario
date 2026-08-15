@@ -131,11 +131,5 @@ libras_dictionary/web/
 # Flutter SDK embutido
 flutter/
 
-# ClojureDart
-.clj-kondo/
-.lsp/
-libras_dictionary/.clojuredart/
-libras_dictionary/.cpcache/
-
 # Local tool state
 .claude/settings.local.json

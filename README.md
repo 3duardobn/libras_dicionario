@@ -9,9 +9,9 @@ vídeo do sinal correspondente, com descrição, exemplos e glosa quando
 disponíveis.
 
 Fiz isso para me ajudar no estudo de Libras. Desenvolvido com vibe coding —
-Claude, Jules e Gemini como assistentes. Sei o básico de Clojure e Flutter, o
-suficiente para acompanhar o que as IAs estão fazendo. Entrego do jeito que
-está; use por sua conta e risco.
+Claude, Jules e Gemini como assistentes. Sei o básico de Flutter, o suficiente
+para acompanhar o que as IAs estão fazendo. Entrego do jeito que está; use por
+sua conta e risco.
 
 ## Funcionalidades
 
@@ -42,49 +42,38 @@ tela de Configurações).
 
 ## Tecnologia
 
-**[ClojureDart](https://github.com/tensegritics/clojuredart) + Flutter** —
-migrado de Dart puro. O Dart gerado (`lib/cljd-out/`) é versionado, então dá
-para compilar só com Flutter quando não se mexe nos `.cljd`.
+**[Flutter](https://flutter.dev) com Dart puro** — código simples, sem
+toolchains adicionais. Basta o Flutter SDK para desenvolver, testar e compilar.
 
-Código-fonte em `libras_dictionary/src/libras_dictionary/`:
+Código-fonte em `libras_dictionary/lib/`:
 
-| Namespace | Responsabilidade |
-|-----------|------------------|
-| `main.cljd` | Tela principal, busca, navegação |
-| `state.cljd` | Estado global, ações, coordenação de players |
-| `api.cljd` | Integração com as fontes (APIs REST e scraping) |
-| `player.cljd` | Players de vídeo (mp4 e YouTube iframe) |
-| `card.cljd` | Card de resultado |
-| `settings_screen.cljd` | Tela de configurações |
-| `strings.cljd` | Textos da interface |
-| `models.cljd` | Modelo de dados |
+| Arquivo | Responsabilidade |
+|---------|------------------|
+| `main.dart` | Tela principal, busca, navegação, estado de tema |
+| `state.dart` | Estado global, ações, coordenação de players |
+| `api.dart` | Integração com as fontes (APIs REST e scraping) |
+| `player.dart` | Players de vídeo (mp4 e YouTube iframe) |
+| `card.dart` | Card de resultado |
+| `settings_screen.dart` | Tela de configurações |
+| `strings.dart` | Textos da interface |
+| `models.dart` | Modelo de dados |
 
-Testes em `libras_dictionary/test/libras_dictionary/`.
+Testes em `libras_dictionary/test/`.
 
 ## Como rodar
 
-Requer [Flutter SDK](https://docs.flutter.dev/get-started/install) e
-[Clojure CLI](https://clojure.org/guides/install_clojure) (este último só para
-editar os `.cljd`).
+Requer apenas o [Flutter SDK](https://docs.flutter.dev/get-started/install).
 
 ```bash
 cd libras_dictionary
 flutter pub get
-
-# Compilar ClojureDart -> Dart (pular se não mudou .cljd)
-clj -M:cljd compile
-
-# Rodar no dispositivo/emulador
-flutter run
-
-# Desenvolvimento com hot-reload dos .cljd
-clj -M:cljd flutter
+flutter run        # rodar no dispositivo/emulador
 ```
 
 Testes:
 
 ```bash
-clj -M:cljd test
+flutter test
 ```
 
 ## Build e publicação

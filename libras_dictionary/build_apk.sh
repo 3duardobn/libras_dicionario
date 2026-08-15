@@ -3,17 +3,12 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FLUTTER="$SCRIPT_DIR/../flutter/bin/flutter"
-CLJ="$(command -v clj 2>/dev/null || echo "")"
-
-echo "==> Verificando dependências..."
-
 if [ ! -f "$FLUTTER" ]; then
-    echo "ERRO: Flutter não encontrado em $FLUTTER"
-    exit 1
+    FLUTTER="$(command -v flutter || echo "")"
 fi
 
-if [ -z "$CLJ" ]; then
-    echo "ERRO: Clojure CLI (clj) não encontrado. Instale em https://clojure.org/guides/install_clojure"
+if [ -z "$FLUTTER" ] || [ ! -x "$FLUTTER" ]; then
+    echo "ERRO: Flutter não encontrado. Instale em https://docs.flutter.dev/get-started/install"
     exit 1
 fi
 
@@ -24,9 +19,6 @@ yes | "$FLUTTER" doctor --android-licenses 2>/dev/null || true
 
 echo "==> Obtendo dependências Flutter..."
 "$FLUTTER" pub get
-
-echo "==> Compilando ClojureDart para Dart..."
-"$CLJ" -M:cljd compile
 
 echo "==> Limpando builds anteriores..."
 "$FLUTTER" clean

@@ -1,10 +1,8 @@
 # Guia de Build e Publicação — Dicionário Libras
 
 Como compilar o aplicativo e publicá-lo na **Google Play Store** e no
-**F-Droid**. O projeto é escrito em **ClojureDart** (fontes em
-`src/libras_dictionary/*.cljd`), que gera Dart em `lib/cljd-out/` (o Dart
-gerado é versionado no git — isso permite compilar só com Flutter quando
-necessário, ex.: F-Droid).
+**F-Droid**. O projeto é escrito em **Dart puro** com Flutter — basta o Flutter
+SDK para desenvolver, testar e compilar; não há toolchains adicionais.
 
 ## 1. Pré-requisitos
 
@@ -12,7 +10,6 @@ necessário, ex.: F-Droid).
 |---|---|---|
 | Flutter | 3.41.x (stable) | <https://docs.flutter.dev/get-started/install> |
 | Java (JDK) | 17+ | já usado pelo Android SDK |
-| Clojure CLI (`clj`) | mais recente | <https://clojure.org/guides/install_clojure> — só é necessário se você editar os arquivos `.cljd` |
 | Android SDK | via Android Studio ou `flutter doctor` | — |
 
 ## 2. Build local (debug/desenvolvimento)
@@ -20,11 +17,11 @@ necessário, ex.: F-Droid).
 ```bash
 cd libras_dictionary
 flutter pub get
-clj -M:cljd compile      # recompila .cljd -> lib/cljd-out (pular se não mudou .cljd)
 flutter run              # roda em device/emulador
 ```
 
-Durante o desenvolvimento, `clj -M:cljd watch` recompila automaticamente com hot-reload.
+Durante o desenvolvimento, use o hot-reload do próprio Flutter (`r` no
+terminal do `flutter run`).
 
 ## 3. Assinatura de release (uma vez só)
 
@@ -56,7 +53,6 @@ O `android/app/build.gradle.kts` usa o keystore automaticamente quando
 ```bash
 cd libras_dictionary
 flutter pub get
-clj -M:cljd compile
 
 # Para a Play Store (App Bundle, obrigatório):
 flutter build appbundle --release
@@ -76,8 +72,7 @@ jarsigner -verify -verbose -certs build/app/outputs/bundle/release/app-release.a
 ## 5. Release via CI (GitHub Actions)
 
 O workflow `.github/workflows/build-release.yml` roda em qualquer tag `v*`:
-compila ClojureDart, gera APKs (split por ABI) **e o `.aab`**, e anexa tudo a
-um GitHub Release.
+gera APKs (split por ABI) **e o `.aab`**, e anexa tudo a um GitHub Release.
 
 Para o CI assinar com a chave de release, configure estes *secrets* no
 repositório (Settings → Secrets and variables → Actions):
@@ -106,9 +101,9 @@ git push origin main v1.0.1
    <https://play.google.com/console> (taxa única de US$ 25).
 2. **Criar app**: nome "Dicionário Libras", idioma padrão pt-BR, tipo App,
    gratuito.
-3. **Política de privacidade**: hospede `docs/privacy-policy.md` em uma URL
-   pública (GitHub Pages ou <https://edbn.dev>) e informe a URL em
-   *Política do app → Política de Privacidade*.
+3. **Política de privacidade**: publique `docs/privacy-policy.md` no domínio
+   **edbn.dev** (ex.: `https://edbn.dev/projetos/libras-dicionario/privacidade/`)
+   e informe a URL em *Política do app → Política de Privacidade*.
 4. **Data Safety (Segurança dos dados)**: declare que o app **não coleta nem
    compartilha dados**. Os pontos relevantes:
    - Coleta de dados: **Não**
@@ -152,7 +147,7 @@ para produção continua manual, no Console.
 - O app **não** usa APIs não oficiais do YouTube: a busca no YouTube abre o
   próprio app/site do YouTube, e os vídeos do YouTube encontrados nos
   dicionários são reproduzidos com o **player incorporado oficial**
-  (`youtube_player_flutter`, IFrame Player API), sem bloquear anúncios nem
+  (`youtube_player_iframe`, IFrame Player API), sem bloquear anúncios nem
   reproduzir em segundo plano. Não remova essas propriedades — são requisito
   dos Termos de Serviço da API do YouTube e evitam rejeição na revisão da Play
   Store.
@@ -160,17 +155,16 @@ para produção continua manual, no Console.
 ## 7. Publicação no F-Droid
 
 O app atende aos requisitos do F-Droid: licença livre (CC0, arquivo `LICENSE`
-na raiz do repositório), sem dependências proprietárias, sem rastreadores, e o
-Dart gerado está versionado (o servidor de build do F-Droid não precisa do
-Clojure).
+na raiz do repositório), sem dependências proprietárias e sem rastreadores. O
+código é Dart puro, então o servidor de build do F-Droid precisa apenas do
+Flutter.
 
 1. **Metadados fastlane** (já incluídos): `fastlane/metadata/android/{pt-BR,en-US}/`
    com título, descrições e ícone — o F-Droid lê essa estrutura direto do
    repositório. Adicione screenshots em
    `fastlane/metadata/android/pt-BR/images/phoneScreenshots/` quando tiver.
 2. **Tag de release**: o F-Droid constrói a partir de tags `v*` (mesmo fluxo do
-   CI). Garanta que `lib/cljd-out/` esteja atualizado no commit da tag
-   (rode `clj -M:cljd compile` antes de tagear se mudou `.cljd`).
+   CI).
 3. **Submissão**: fork de <https://gitlab.com/fdroid/fdroiddata>, copie o
    arquivo pronto [`fdroid/dev.edbn.libras_dictionary.yml`](../../fdroid/dev.edbn.libras_dictionary.yml)
    (na raiz deste repositório) para `metadata/dev.edbn.libras_dictionary.yml`
@@ -224,10 +218,8 @@ diferentes). Isso é normal e esperado.
 ## 8. Checklist antes de cada release
 
 - [ ] Versão incrementada em `pubspec.yaml` (`x.y.z+N`, `+N` sempre cresce)
-- [ ] `clj -M:cljd test` e depois `clj -M:cljd compile` (nesta ordem — o
-      `test` injeta imports de teste nos arquivos gerados e o `compile`
-      final limpa); commit de `lib/cljd-out/` e `test/cljd-out/`
 - [ ] `flutter analyze` sem erros
+- [ ] `flutter test` verde
 - [ ] Testado em device real: busca (INES → vídeo mp4; Rede Surdos → vídeo
       YouTube), players não tocam ao mesmo tempo, botão YouTube abre o app externo
 - [ ] Tag `vX.Y.Z` enviada; CI verde; `.aab` no GitHub Release

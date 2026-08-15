@@ -32,20 +32,6 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Install Clojure CLI
-        uses: DeLaGuardo/setup-clojure@13
-        with:
-          cli: latest
-
-      - name: Cache Clojure deps
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.m2/repository
-            ~/.gitlibs
-          key: clojure-${{ hashFiles('libras_dictionary/deps.edn') }}
-          restore-keys: clojure-
-
       - name: Check tag matches pubspec version
         working-directory: libras_dictionary
         run: |
@@ -59,10 +45,6 @@ jobs:
       - name: Get Flutter dependencies
         working-directory: libras_dictionary
         run: flutter pub get
-
-      - name: Compile ClojureDart → Dart
-        working-directory: libras_dictionary
-        run: clojure -M:cljd compile
 
       # Release signing: set the repository secrets KEYSTORE_BASE64
       # (base64 of the .jks), KEYSTORE_PASSWORD, KEY_ALIAS and KEY_PASSWORD.
