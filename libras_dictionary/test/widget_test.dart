@@ -9,7 +9,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     await st.appState.loadSettings();
 
-    await tester.pumpWidget(const LibrasDictionaryApp());
+    await tester.pumpWidget(const LibrasDictionaryApp(showSplash: false));
     await tester.pump();
 
     expect(find.text(s.appTitle), findsOneWidget);

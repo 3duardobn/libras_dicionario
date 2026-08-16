@@ -278,18 +278,28 @@ class AppState extends ChangeNotifier {
 
   // --- Filters ---
 
+  bool isSourceActive(String source) {
+    if (!_enabledSources.contains(source)) return false;
+    if (_activeFilters.contains('Ambos')) return true;
+    return _activeFilters.contains(source);
+  }
+
   void onFilterChanged(String filterName, bool selected) {
     if (filterName == 'Ambos') {
       _activeFilters = {'Ambos'};
     } else {
-      final updated = selected
-          ? {..._activeFilters..remove('Ambos'), filterName}
-          : {..._activeFilters}..remove(filterName);
-      if (updated.isEmpty ||
-          _enabledSources.every((source) => updated.contains(source))) {
+      final current = Set<String>.from(_activeFilters);
+      current.remove('Ambos');
+      if (selected) {
+        current.add(filterName);
+      } else {
+        current.remove(filterName);
+      }
+      if (current.isEmpty ||
+          _enabledSources.every((source) => current.contains(source))) {
         _activeFilters = {'Ambos'};
       } else {
-        _activeFilters = updated;
+        _activeFilters = current;
       }
     }
     notifyListeners();

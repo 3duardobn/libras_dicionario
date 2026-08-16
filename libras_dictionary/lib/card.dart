@@ -5,23 +5,9 @@ import 'models.dart';
 import 'player.dart';
 import 'state.dart' as st;
 import 'strings.dart' as s;
+import 'theme.dart';
 
-Color getSourceColor(String source) {
-  switch (source) {
-    case 'INES':
-      return Colors.blue.shade600;
-    case 'RedeSurdos':
-      return Colors.green.shade600;
-    case 'UFV':
-      return Colors.red.shade600;
-    case 'LibrasAcademicaUFF':
-      return Colors.purple.shade600;
-    case 'SpreadTheSign':
-      return Colors.orange.shade600;
-    default:
-      return Colors.grey.shade600;
-  }
-}
+Color getSourceColor(String source) => AppColors.forSource(source);
 
 Widget _htmlSection(String label, String data, bool italic) {
   return Column(
@@ -79,7 +65,7 @@ class _DictionaryItemCardState extends State<DictionaryItemCard> {
     final videoUrl = item.videoUrl;
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       clipBehavior: Clip.antiAlias,
@@ -131,17 +117,23 @@ class _DictionaryItemCardState extends State<DictionaryItemCard> {
                 ),
               ),
               if (_expanded)
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (description != null && description.trim().isNotEmpty)
-                        _htmlSection(s.descriptionLabel, description, false),
-                      if (exemplo != null && exemplo.trim().isNotEmpty)
-                        _htmlSection(s.exampleLabel, exemplo, true),
-                      if (libras != null && libras.trim().isNotEmpty)
-                        Column(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (description != null && description.trim().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        child: _htmlSection(s.descriptionLabel, description, false),
+                      ),
+                    if (exemplo != null && exemplo.trim().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                        child: _htmlSection(s.exampleLabel, exemplo, true),
+                      ),
+                    if (libras != null && libras.trim().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
@@ -173,28 +165,28 @@ class _DictionaryItemCardState extends State<DictionaryItemCard> {
                             const SizedBox(height: 12),
                           ],
                         ),
-                      if (youtubeId != null && youtubeId.trim().isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: YoutubePlayerWidget(youtubeId: youtubeId),
+                      ),
+                    if (youtubeId != null && youtubeId.trim().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: YoutubePlayerWidget(youtubeId: youtubeId),
+                      ),
+                    if (imageUrl != null && imageUrl.trim().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const SizedBox.shrink(),
                         ),
-                      if (imageUrl != null && imageUrl.trim().isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Image.network(
-                            imageUrl,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const SizedBox.shrink(),
-                          ),
-                        ),
-                      if (videoUrl != null && videoUrl.trim().isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: ChewieVideoWidget(videoUrl: videoUrl),
-                        ),
-                    ],
-                  ),
+                      ),
+                    if (videoUrl != null && videoUrl.trim().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: ChewieVideoWidget(videoUrl: videoUrl),
+                      ),
+                  ],
                 ),
             ],
           ),

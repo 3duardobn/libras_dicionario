@@ -151,6 +151,40 @@ void main() {
     });
   });
 
+  group('onFilterChanged', () {
+    test('selecting a specific source removes Ambos', () {
+      st.appState.onFilterChanged('Ambos', true);
+      expect(st.appState.activeFilters, equals({'Ambos'}));
+
+      st.appState.onFilterChanged('INES', true);
+      expect(st.appState.activeFilters, equals({'INES'}));
+    });
+
+    test('selecting all sources resets to Ambos', () {
+      st.appState.onFilterChanged('Ambos', true);
+      for (final src in st.allSources) {
+        st.appState.onFilterChanged(src, true);
+      }
+      expect(st.appState.activeFilters, equals({'Ambos'}));
+    });
+
+    test('deselecting last source resets to Ambos', () {
+      st.appState.onFilterChanged('INES', true);
+      st.appState.onFilterChanged('INES', false);
+      expect(st.appState.activeFilters, equals({'Ambos'}));
+    });
+
+    test('isSourceActive checks if source is active under filter', () {
+      st.appState.onFilterChanged('Ambos', true);
+      expect(st.appState.isSourceActive('INES'), isTrue);
+      expect(st.appState.isSourceActive('UFV'), isTrue);
+
+      st.appState.onFilterChanged('RedeSurdos', true);
+      expect(st.appState.isSourceActive('INES'), isFalse);
+      expect(st.appState.isSourceActive('RedeSurdos'), isTrue);
+    });
+  });
+
   group('rankResults', () {
     test('exact title first, then prefix, then rest', () {
       DictItem mk(String title) => DictItem(title: title, source: 'INES');

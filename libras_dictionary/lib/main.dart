@@ -8,6 +8,9 @@ import 'settings_screen.dart';
 import 'state.dart' as st;
 import 'strings.dart' as s;
 
+import 'screens/splash_screen.dart';
+import 'theme.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = _MyHttpOverrides();
@@ -26,7 +29,9 @@ class _MyHttpOverrides extends HttpOverrides {
 }
 
 class LibrasDictionaryApp extends StatelessWidget {
-  const LibrasDictionaryApp({super.key});
+  const LibrasDictionaryApp({super.key, this.showSplash = true});
+
+  final bool showSplash;
 
   @override
   Widget build(BuildContext context) {
@@ -37,20 +42,9 @@ class LibrasDictionaryApp extends StatelessWidget {
           title: s.appTitle,
           debugShowCheckedModeBanner: false,
           themeMode: st.appState.themeMode,
-          theme: ThemeData(
-            useMaterial3: true,
-            brightness: Brightness.light,
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-          ),
-          darkTheme: ThemeData(
-            useMaterial3: true,
-            brightness: Brightness.dark,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.blue,
-              brightness: Brightness.dark,
-            ),
-          ),
-          home: const HomePage(),
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          home: showSplash ? const SplashScreen() : const HomePage(),
         );
       },
     );
@@ -137,7 +131,8 @@ class _HomePageState extends State<HomePage> {
         final suggestions =
             state.searchQuery.isNotEmpty &&
                 state.searchQuery != state.lastSearched &&
-                !state.isSearching
+                !state.isSearching &&
+                state.isSourceActive('INES')
             ? st.suggestionsFor(state.searchQuery, 6)
             : const <String>[];
 
@@ -171,18 +166,6 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-          floatingActionButton: state.showYoutubeButton
-              ? FloatingActionButton.extended(
-                  onPressed: () => state.openYoutubeSearch(state.searchQuery),
-                  backgroundColor: const Color(0xFF1565C0),
-                  icon: const Icon(Icons.play_circle_filled, color: Colors.white),
-                  label: const Text(
-                    s.youtubeButton,
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                  tooltip: s.youtubeTooltip,
-                )
-              : null,
           body: Column(
             children: [
               Padding(
@@ -291,43 +274,7 @@ class _HomePageState extends State<HomePage> {
                 textAlign: TextAlign.center,
               ),
               if (!blank && state.showYoutubeButton)
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        s.notFoundDictionaries,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade500,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => state.openYoutubeSearch(state.searchQuery),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.play_circle_filled,
-                            size: 18,
-                            color: Color(0xFF1565C0),
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            s.searchYoutube,
-                            style: TextStyle(
-                              color: Color(0xFF1565C0),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                _YoutubeCard(query: state.searchQuery),
               if (blank && state.recentSearches.isNotEmpty)
                 _RecentSearchesBlock(
                   recents: state.recentSearches,
@@ -341,7 +288,80 @@ class _HomePageState extends State<HomePage> {
 
     return ListView.builder(
       itemCount: displayResults.length,
-      itemBuilder: (context, index) => DictionaryItemCard(item: displayResults[index]),
+      itemBuilder: (context, index) =>
+          DictionaryItemCard(item: displayResults[index]),
+    );
+  }
+}
+
+class _YoutubeCard extends StatelessWidget {
+  const _YoutubeCard({required this.query});
+
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2A292E) : const Color(0xFFF4F6FB),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(
+          color: AppColors.sourceYoutube.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.play_circle_filled,
+                size: 28,
+                color: AppColors.sourceYoutube,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                s.searchYoutube,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            s.notFoundDictionaries,
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark ? Colors.grey.shade400 : AppColors.neutralMuted,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 14),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.sourceYoutube,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.input),
+              ),
+            ),
+            onPressed: () => st.appState.openYoutubeSearch(query),
+            icon: const Icon(Icons.open_in_new, size: 18),
+            label: Text(
+              'Buscar "$query" no YouTube',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -468,62 +488,108 @@ class _FilterChips extends StatelessWidget {
     }
   }
 
-  Widget _chip({
-    required String source,
-    required String label,
-    required bool isSelected,
-    required Color selectedColor,
-    bool bold = false,
-  }) {
-    final labelColor = isSelected
-        ? Colors.white
-        : (isDark ? Colors.white : const Color(0xFF1C1B1F));
-    return FilterChip(
-      label: Text(
-        label,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-          color: labelColor,
-        ),
-      ),
-      selected: isSelected,
-      onSelected: (value) => st.appState.onFilterChanged(source, value),
-      showCheckmark: false,
-      selectedColor: selectedColor,
-      backgroundColor: Colors.grey.shade600.withValues(alpha: 0.2),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      elevation: 1,
-      pressElevation: 2,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final sortedSources = enabledSources.toList()..sort();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        alignment: WrapAlignment.center,
-        children: [
-          _chip(
-            source: 'Ambos',
-            label: s.filterAll,
-            isSelected: activeFilters.contains('Ambos'),
-            selectedColor: Colors.blue.shade600,
-            bold: true,
-          ),
-          for (final source in sortedSources)
-            _chip(
-              source: source,
-              label: _displayLabel(source),
-              isSelected: activeFilters.contains(source),
-              selectedColor: getSourceColor(source),
+    return SizedBox(
+      height: 44,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Row(
+          children: [
+            _AnimatedFilterChip(
+              source: 'Ambos',
+              label: s.filterAll,
+              isSelected: activeFilters.contains('Ambos'),
+              selectedColor: AppColors.primary,
+              isDark: isDark,
+              bold: true,
             ),
-        ],
+            const SizedBox(width: 8),
+            for (final source in sortedSources) ...[
+              _AnimatedFilterChip(
+                source: source,
+                label: _displayLabel(source),
+                isSelected: activeFilters.contains(source),
+                selectedColor: AppColors.forSource(source),
+                isDark: isDark,
+              ),
+              const SizedBox(width: 8),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AnimatedFilterChip extends StatelessWidget {
+  const _AnimatedFilterChip({
+    required this.source,
+    required this.label,
+    required this.isSelected,
+    required this.selectedColor,
+    required this.isDark,
+    this.bold = false,
+  });
+
+  final String source;
+  final String label;
+  final bool isSelected;
+  final Color selectedColor;
+  final bool isDark;
+  final bool bold;
+
+  @override
+  Widget build(BuildContext context) {
+    final unselectedBg =
+        isDark ? const Color(0xFF2C2B30) : const Color(0xFFEFF1F5);
+    final unselectedFg = isDark ? Colors.white70 : AppColors.neutralText;
+
+    return AnimatedScale(
+      scale: isSelected ? 1.04 : 1.0,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        decoration: BoxDecoration(
+          color: isSelected ? selectedColor : unselectedBg,
+          borderRadius: BorderRadius.circular(AppRadius.chip),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: selectedColor.withValues(alpha: 0.35),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(AppRadius.chip),
+            onTap: () {
+              st.appState.onFilterChanged(source, !isSelected);
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              child: AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 220),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: (bold || isSelected)
+                      ? FontWeight.bold
+                      : FontWeight.w500,
+                  color: isSelected ? Colors.white : unselectedFg,
+                ),
+                child: Text(label),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
