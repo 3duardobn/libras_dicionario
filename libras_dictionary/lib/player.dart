@@ -51,9 +51,10 @@ class _YoutubePlayerWidgetState extends State<YoutubePlayerWidget> {
       videoId: youtubeId,
       autoPlay: false,
       params: const YoutubePlayerParams(
-        showControls: true,
-        showFullscreenButton: true,
+        showControls: false,
+        showVideoAnnotations: false,
         strictRelatedVideos: true,
+        loop: true,
       ),
     );
     _subscription = _controller.stream.listen((value) {
@@ -63,6 +64,10 @@ class _YoutubePlayerWidgetState extends State<YoutubePlayerWidget> {
       }
       if (value.playerState == PlayerState.playing) {
         st.claimPlayback(_controller, _controller.pauseVideo);
+      }
+      if (value.playerState == PlayerState.ended) {
+        _controller.seekTo(seconds: 0);
+        _controller.playVideo();
       }
     });
   }
@@ -109,9 +114,16 @@ class _YoutubePlayerWidgetState extends State<YoutubePlayerWidget> {
         ),
       );
     }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: YoutubePlayer(controller: _controller, aspectRatio: 16 / 9),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: AspectRatio(
+        aspectRatio: 14 / 9,
+        child: YoutubePlayer(controller: _controller, aspectRatio: 14 / 9),
+      ),
     );
   }
 }
@@ -145,11 +157,11 @@ class _ChewieVideoWidgetState extends State<ChewieVideoWidget> {
           onTap: () => setState(() => _activated = true),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.75),
+              color: Colors.black,
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Center(
-              child: Icon(Icons.play_circle_filled, size: 64, color: Colors.white),
+              child: Icon(Icons.play_circle_filled, size: 72, color: Colors.white),
             ),
           ),
         ),
@@ -192,6 +204,7 @@ class _ChewiePlayerState extends State<_ChewiePlayer> {
       );
       await vc.initialize();
       await vc.setVolume(0.0);
+      await vc.setLooping(true);
       void playListener() {
         if (vc.value.isPlaying) {
           st.claimPlayback(vc, vc.pause);
@@ -207,6 +220,7 @@ class _ChewiePlayerState extends State<_ChewiePlayer> {
         looping: true,
         aspectRatio: vc.value.aspectRatio,
         showControls: true,
+        hideControlsTimer: const Duration(milliseconds: 800),
         errorBuilder: (context, errorMessage) => Center(
           child: Text(
             errorMessage,
