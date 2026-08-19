@@ -133,3 +133,9 @@ flutter/
 
 # Local tool state
 .claude/settings.local.json
+
+# Legacy ClojureDart tooling (projeto migrado para Flutter Dart puro)
+**/.clj-kondo/
+**/.lsp/
+**/.clojuredart/
+**/.cpcache/
