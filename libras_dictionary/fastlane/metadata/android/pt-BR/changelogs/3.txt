@@ -1,0 +1,7 @@
+Versão 1.0.4 — reescrita em Dart/Flutter puro:
+
+• Migração completa de ClojureDart para Flutter Dart 3
+• Tema Material 3 com modo claro e escuro
+• Barra de filtros animada e interface despoluída
+• Player de vídeo otimizado: controles ocultos, reprodução em loop
+• Correções na reprodução de MP4 e player oficial do YouTube
