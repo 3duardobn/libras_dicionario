@@ -10,6 +10,15 @@ import 'models.dart';
 
 const requestTimeout = Duration(seconds: 10);
 
+// --- Source URLs ---
+
+const inesBaseUrl = 'https://dicionario.ines.gov.br';
+const redesurdosSearchUrl =
+    'https://redesurdosce.ufc.br/wp-json/wp/v2/posts?search=';
+const uffSearchUrl = 'https://librasacademica.uff.br/wp-json/wp/v2/posts?search=';
+const ufvSearchUrl = 'https://sistemas.cead.ufv.br/capes/dicionario/';
+const spreadTheSignBaseUrl = 'https://www.spreadthesign.com';
+
 /// Shared client. Tests swap this for a [http.MockClient].
 http.Client httpClient = http.Client();
 
@@ -80,8 +89,7 @@ Future<List<dynamic>> loadInesData() async {
   final cached = _inesCache;
   if (cached != null) return cached;
   try {
-    final body =
-        await fetchUrl('https://dicionario.ines.gov.br/public/site/js/palavras.js');
+    final body = await fetchUrl('$inesBaseUrl/public/site/js/palavras.js');
     final data = parseInesBody(body);
     if (data == null) {
       throw Exception('INES: resposta em formato inesperado');
@@ -129,12 +137,12 @@ Future<List<DictItem>> fetchInes(String query) async {
       libras: map['libras'] as String?,
       videoUrl: video.isEmpty
           ? null
-          : 'https://dicionario.ines.gov.br/public/media/palavras/videos/$video',
+          : '$inesBaseUrl/public/media/palavras/videos/$video',
       imageUrl: image.isEmpty
           ? null
-          : 'https://dicionario.ines.gov.br/public/media/palavras/images/$image',
+          : '$inesBaseUrl/public/media/palavras/images/$image',
       link:
-          'https://dicionario.ines.gov.br/pt/search?word=${Uri.encodeComponent(palavra)}',
+          '$inesBaseUrl/pt/search?word=${Uri.encodeComponent(palavra)}',
       source: 'INES',
     ));
   }
@@ -142,6 +150,14 @@ Future<List<DictItem>> fetchInes(String query) async {
 }
 
 // --- Video / YouTube extraction ---
+
+/// Matches the `src` of any `<video>` tag.
+final RegExp videoSrcExp =
+    RegExp("<video[^>]*src\\s*=\\s*[\"']([^\"']+)[\"']");
+
+/// Same, restricted to SpreadTheSign's media CDN.
+final RegExp _stsVideoSrcExp = RegExp(
+    "<video[^>]*src\\s*=\\s*[\"'](https:\\/\\/media\\.spreadthesign\\.com\\/video\\/mp4\\/[^\"']+)[\"']");
 
 class VideoExtraction {
   const VideoExtraction({this.videoUrl, this.youtubeId});
@@ -151,14 +167,13 @@ class VideoExtraction {
 }
 
 VideoExtraction extractVideoAndYoutubeId(String content) {
-  final videoExp = RegExp("<video[^>]+src\\s*=\\s*[\"']([^\"']+)[\"']");
   final ytEmbedExp = RegExp("src\\s*=\\s*[\"']https:\\/\\/www\\.youtube\\.com\\/embed\\/([^\"'?]+)");
   final ytWatchExp = RegExp("https:\\/\\/www\\.youtube\\.com\\/watch\\?v=([^\"&\\s]+)");
   final ytShortExp = RegExp("https:\\/\\/youtu\\.be\\/([^\"&\\s<]+)");
   final pbVideoExp = RegExp("src\\s*=\\s*[\"'](http[^\"']+?\\.mp4)[\"']");
   final pbYtExp = RegExp("src\\s*=\\s*[\"'](https:\\/\\/www\\.youtube\\.com\\/watch\\?v=[^\"&]+)[\"']");
 
-  final videoMatch = videoExp.firstMatch(content);
+  final videoMatch = videoSrcExp.firstMatch(content);
   if (videoMatch != null) {
     return VideoExtraction(videoUrl: videoMatch.group(1));
   }
@@ -219,21 +234,33 @@ Future<List<DictItem>> _fetchWordpress(
   return items;
 }
 
+/// Builds a [DictItem] from a WordPress post, extracting video/YouTube
+/// from the rendered content. `description` lets callers choose between
+/// excerpt and full content.
+DictItem _wordpressItem(Map item, String source, String? description) {
+  final content = ((item['content'] as Map?)?['rendered'] ?? '') as String;
+  final extraction = extractVideoAndYoutubeId(content);
+  return DictItem(
+    title: ((item['title'] as Map?)?['rendered']) as String?,
+    description: description,
+    videoUrl: extraction.videoUrl,
+    youtubeId: extraction.youtubeId,
+    link: item['link'] as String?,
+    source: source,
+  );
+}
+
 Future<List<DictItem>> fetchRedeSurdos(String query) {
   return _fetchWordpress(
-    'https://redesurdosce.ufc.br/wp-json/wp/v2/posts?search=',
+    redesurdosSearchUrl,
     query,
     (item) {
       final content = ((item['content'] as Map?)?['rendered'] ?? '') as String;
-      final extraction = extractVideoAndYoutubeId(content);
       final excerpt = ((item['excerpt'] as Map?)?['rendered'] ?? '') as String;
-      return DictItem(
-        title: ((item['title'] as Map?)?['rendered']) as String?,
-        description: excerpt.isEmpty ? content : excerpt,
-        videoUrl: extraction.videoUrl,
-        youtubeId: extraction.youtubeId,
-        link: item['link'] as String?,
-        source: 'RedeSurdos',
+      return _wordpressItem(
+        item,
+        'RedeSurdos',
+        excerpt.isEmpty ? content : excerpt,
       );
     },
   );
@@ -241,20 +268,13 @@ Future<List<DictItem>> fetchRedeSurdos(String query) {
 
 Future<List<DictItem>> fetchLibrasAcademicaUff(String query) {
   return _fetchWordpress(
-    'https://librasacademica.uff.br/wp-json/wp/v2/posts?search=',
+    uffSearchUrl,
     query,
-    (item) {
-      final content = ((item['content'] as Map?)?['rendered'] ?? '') as String;
-      final extraction = extractVideoAndYoutubeId(content);
-      return DictItem(
-        title: ((item['title'] as Map?)?['rendered']) as String?,
-        description: ((item['excerpt'] as Map?)?['rendered']) as String?,
-        videoUrl: extraction.videoUrl,
-        youtubeId: extraction.youtubeId,
-        link: item['link'] as String?,
-        source: 'LibrasAcademicaUFF',
-      );
-    },
+    (item) => _wordpressItem(
+      item,
+      'LibrasAcademicaUFF',
+      ((item['excerpt'] as Map?)?['rendered']) as String?,
+    ),
   );
 }
 
@@ -265,8 +285,7 @@ Future<List<DictItem>> fetchLibrasAcademicaUff(String query) {
 Future<DictItem?> fetchUfvDetail(String urlStr, String title) async {
   try {
     final body = await fetchUrl(urlStr);
-    final videoExp = RegExp("<video[^>]+src\\s*=\\s*[\"']([^\"']+)[\"']");
-    final videoMatch = videoExp.firstMatch(body);
+    final videoMatch = videoSrcExp.firstMatch(body);
     if (videoMatch != null) {
       final videoUrl = videoMatch.group(1)?.trim() ?? '';
       if (videoUrl.isNotEmpty) {
@@ -286,7 +305,7 @@ Future<DictItem?> fetchUfvDetail(String urlStr, String title) async {
 
 Future<List<DictItem>> fetchUfv(String query) async {
   final body = await fetchUrl(
-    'https://sistemas.cead.ufv.br/capes/dicionario/?s=${Uri.encodeQueryComponent(query)}',
+    '$ufvSearchUrl?s=${Uri.encodeQueryComponent(query)}',
   );
   final regex = wordBoundRegex(query);
   final itemExp = RegExp('<a href="([^"]+)">(?:\\s*)<h4>([^<]+)</h4>');
@@ -310,9 +329,7 @@ const _stsHeaders = {'User-Agent': 'Mozilla/5.0'};
 Future<DictItem?> fetchSpreadTheSignDetail(String urlStr, String title) async {
   try {
     final body = await fetchUrl(urlStr, headers: _stsHeaders);
-    final videoExp = RegExp(
-        "<video[^>]*src\\s*=\\s*[\"'](https:\\/\\/media\\.spreadthesign\\.com\\/video\\/mp4\\/[^\"']+)[\"']");
-    final videoMatch = videoExp.firstMatch(body);
+    final videoMatch = _stsVideoSrcExp.firstMatch(body);
     if (videoMatch != null) {
       return DictItem(
         title: title,
@@ -329,14 +346,12 @@ Future<DictItem?> fetchSpreadTheSignDetail(String urlStr, String title) async {
 
 Future<List<DictItem>> fetchSpreadTheSign(String query) async {
   final urlStr =
-      'https://www.spreadthesign.com/pt.br/search/?q=${Uri.encodeQueryComponent(query)}';
+      '$spreadTheSignBaseUrl/pt.br/search/?q=${Uri.encodeQueryComponent(query)}';
   final body = await fetchUrl(urlStr, headers: _stsHeaders);
   final regex = wordBoundRegex(query);
   final results = <DictItem>[];
 
-  final videoExp = RegExp(
-      "<video[^>]*src\\s*=\\s*[\"'](https:\\/\\/media\\.spreadthesign\\.com\\/video\\/mp4\\/[^\"']+)[\"']");
-  final videoMatch = videoExp.firstMatch(body);
+  final videoMatch = _stsVideoSrcExp.firstMatch(body);
   if (videoMatch != null) {
     final videoUrl = videoMatch.group(1)!;
     final titleExp = RegExp('<span class="flag-icon flag-icon-br bordered"><\\/span>\\s*([^<\\n]+)');
@@ -361,7 +376,7 @@ Future<List<DictItem>> fetchSpreadTheSign(String query) async {
     final link = match.group(1);
     final title = match.group(2)?.trim();
     if (link != null && title != null && regex.hasMatch(normalize(title))) {
-      futures.add(fetchSpreadTheSignDetail('https://www.spreadthesign.com$link', title));
+      futures.add(fetchSpreadTheSignDetail('$spreadTheSignBaseUrl$link', title));
     }
   }
   final details = await Future.wait(futures);
