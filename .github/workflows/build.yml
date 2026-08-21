@@ -77,8 +77,8 @@ jobs:
         with:
           name: release-artifacts
           path: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/bundle/release/app-release.aab
+            libras_dictionary/build/app/outputs/flutter-apk/app-release.apk
+            libras_dictionary/build/app/outputs/bundle/release/app-release.aab
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
@@ -87,5 +87,5 @@ jobs:
           name: Libras Dictionary ${{ github.ref_name }}
           generate_release_notes: true
           files: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/bundle/release/app-release.aab
+            libras_dictionary/build/app/outputs/flutter-apk/app-release.apk
+            libras_dictionary/build/app/outputs/bundle/release/app-release.aab
