@@ -15,6 +15,7 @@
 
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'card.dart';
@@ -28,14 +29,16 @@ import 'theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  HttpOverrides.global = _MyHttpOverrides();
+  if (kDebugMode) {
+    HttpOverrides.global = _DebugHttpOverrides();
+  }
   await st.appState.loadSettings();
   // Fire-and-forget: warms autocomplete + offline cache in background.
   st.appState.preloadInes();
   runApp(const LibrasDictionaryApp());
 }
 
-class _MyHttpOverrides extends HttpOverrides {
+class _DebugHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
