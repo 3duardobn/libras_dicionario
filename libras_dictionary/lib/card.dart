@@ -177,8 +177,33 @@ class _DictionaryItemCardState extends State<DictionaryItemCard> {
                         child: Image.network(
                           imageUrl,
                           fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const SizedBox.shrink(),
+                          loadingBuilder: (context, child, progress) =>
+                              progress == null
+                                  ? child
+                                  : const Padding(
+                                      padding: EdgeInsets.all(24),
+                                      child: Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    ),
+                          errorBuilder: (context, error, stackTrace) => Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.broken_image_outlined,
+                                    color: Colors.grey.shade600),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    s.imageError,
+                                    style: TextStyle(
+                                        color: Colors.grey.shade600),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     if (videoUrl != null && videoUrl.trim().isNotEmpty)

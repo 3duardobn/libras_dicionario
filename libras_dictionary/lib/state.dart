@@ -326,7 +326,12 @@ class AppState extends ChangeNotifier {
 
   Future<void> launchUrlString(String urlStr) async {
     final uri = Uri.parse(urlStr);
-    await launchUrl(uri);
+    try {
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok) api.log(['Failed to launch URL:', urlStr]);
+    } catch (e) {
+      api.log(['Failed to launch URL:', e]);
+    }
   }
 
   /// Opens a YouTube search for the query in the YouTube app/browser.

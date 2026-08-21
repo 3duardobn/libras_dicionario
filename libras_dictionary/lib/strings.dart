@@ -22,6 +22,7 @@ const favoritesEmpty =
 const favoriteAdd = 'Adicionar aos favoritos';
 const favoriteRemove = 'Remover dos favoritos';
 const videoError = 'Erro ao carregar o vídeo.';
+const imageError = 'Erro ao carregar a imagem.';
 const youtubeError = 'Não foi possível reproduzir o vídeo.';
 const openInYoutube = 'Abrir no YouTube';
 const playVideo = 'Reproduzir vídeo';
