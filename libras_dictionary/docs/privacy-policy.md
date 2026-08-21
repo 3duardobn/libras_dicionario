@@ -50,7 +50,7 @@ Alterações nesta política serão publicadas nesta página.
 
 Dúvidas: abra uma issue em
 <https://github.com/3duardobn/libras_dicionario> ou escreva para
-`claude@edbn.dev`.
+`eduardo@edbn.dev`.
 
 ---
 
@@ -63,4 +63,4 @@ by its own privacy policy. YouTube videos are played with the official embedded
 YouTube player, subject to YouTube's Terms of Service and Google's Privacy
 Policy. Only local preferences (theme, enabled sources) are stored on the
 device and never leave it. The only permission requested is Internet access.
-Contact: `claude@edbn.dev`.
+Contact: `eduardo@edbn.dev`.

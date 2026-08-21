@@ -18,3 +18,5 @@ Recursos:
 • Sem anúncios, sem rastreamento, sem coleta de dados pessoais
 
 O aplicativo é software livre (CC0). Os direitos dos vídeos e conteúdos pertencem às instituições de origem; o uso é para fins educacionais e de acessibilidade.
+
+Site do projeto: https://edbn.dev/projetos/libras-dicionario/

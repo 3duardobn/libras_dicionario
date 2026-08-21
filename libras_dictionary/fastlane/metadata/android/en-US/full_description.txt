@@ -18,3 +18,5 @@ Features:
 • No ads, no tracking, no personal data collection
 
 The app is free software (CC0). Video and content rights belong to the original institutions; usage is for educational and accessibility purposes.
+
+Project website: https://edbn.dev/projetos/libras-dicionario/
