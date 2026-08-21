@@ -167,8 +167,28 @@ class AppState extends ChangeNotifier {
 
   // --- Settings ---
 
-  Future<void> loadSettings() async {
-    final p = await SharedPreferences.getInstance();
+  /// Restores the initial state between widget tests (the singleton
+  /// survives across tests in the same process).
+  @visibleForTesting
+  void resetForTest() {
+    _themeMode = ThemeMode.light;
+    _searchQuery = '';
+    _lastSearched = null;
+    _searchToken++;
+    _isSearching = false;
+    _searchResults = [];
+    _failedSources = [];
+    _errorMessage = null;
+    _recentSearches = [];
+    _favorites = [];
+    _enabledSources = allSources;
+    _activeFilters = {'Ambos'};
+    _isShareMinimal = false;
+    _showYoutubeButton = true;
+    notifyListeners();
+  }
+
+  Future<void> loadSettings() async {    final p = await SharedPreferences.getInstance();
     final isDark = p.getBool('isDark') ?? false;
     final enabledSources = p.getStringList('enabled_sources');
     final shareMin = p.getBool('is_share_minimal') ?? false;
