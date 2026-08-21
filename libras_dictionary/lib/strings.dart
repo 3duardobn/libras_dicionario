@@ -7,6 +7,7 @@ const searchButton = 'Buscar';
 const youtubeButton = 'YouTube';
 const youtubeTooltip = 'Buscar no YouTube';
 const searchYoutube = 'Buscar no YouTube';
+String searchYoutubeFor(String query) => 'Buscar "$query" no YouTube';
 const notFoundDictionaries = 'Não encontrado nos dicionários.';
 const typeToSearch = 'Digite uma palavra acima para pesquisar';
 String noResultsFor(String query) => 'Nenhum resultado encontrado para "$query"';

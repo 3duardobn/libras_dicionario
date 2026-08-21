@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../main.dart';
 import '../strings.dart' as s;
 import '../theme.dart';
+import 'home_screen.dart';
 
 /// Animated branded Splash Screen showing the Libras Dictionary logo.
 class SplashScreen extends StatefulWidget {

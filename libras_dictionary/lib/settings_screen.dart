@@ -12,6 +12,19 @@ const _sourceLabels = {
   'SpreadTheSign': 'SpreadTheSign',
 };
 
+/// Short display label for a source id, shared by filter chips and
+/// the settings screen.
+String sourceLabel(String source) {
+  switch (source) {
+    case 'RedeSurdos':
+      return 'Rede Surdos';
+    case 'LibrasAcademicaUFF':
+      return 'Libras Acadêmica';
+    default:
+      return source;
+  }
+}
+
 Widget _buildSourceCredit(String name, String org, String url, String copyright) {
   return Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
