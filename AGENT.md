@@ -37,3 +37,18 @@ libras_dictionary/
    - Primary: `#1565C0`
 3. **ADB Environment Variable**: Always export `ANDROID_HOME=$HOME/Android/Sdk` when executing `flutter run` or `flutter devices` commands.
 4. **Verification Requirement**: Always run `flutter test` and `flutter analyze` after modifying code before declaring success.
+5. **Assinatura (local e CI)**: a keystore NÃO vive neste repo — fica
+   centralizada em `~/projetos/personal/keystores/libras_dicionario.jks`
+   (alias `libras_dicionario`), compartilhada com os outros apps do dev
+   (LifeCalendar, roleta). Ver `~/projetos/personal/keystores/README.md`.
+   - Local: `build.sh` importa `signing.env` e exporta `KEYSTORE_PATH`,
+     `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`; sem elas o Gradle usa a
+     debug key.
+   - CI: `.github/workflows/build.yml` usa os secrets `KEYSTORE_BASE64`,
+     `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` (já configurados no repo
+     com ESTA keystore). O workflow antigo "Build and Release APK" foi
+     desativado por assinar com debug e poluir as releases.
+   - Backup criptografado das chaves em `~/Backups`/`~/Koofr` (`*.age`, senha
+     no Bitwarden). Perder jks/senha = impossível atualizar o app publicado.
+   - Releases: sempre bump de versão no `pubspec.yaml` + tag nova; a tag deve
+     bater com a versão do pubspec. Nunca reaproveite artefatos antigos.
