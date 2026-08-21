@@ -175,9 +175,10 @@ Flutter.
      - Reading
      - Science & Education
    License: GPL-3.0-or-later
-   AuthorName: Eduardo Barroso Nunes
+   AuthorName: eduardobn
    SourceCode: https://github.com/3duardobn/libras_dicionario
    IssueTracker: https://github.com/3duardobn/libras_dicionario/issues
+   WebSite: https://edbn.dev/projetos/libras-dicionario/
 
    AutoName: Dicionário Libras
    RepoType: git
