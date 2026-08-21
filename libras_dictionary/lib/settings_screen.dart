@@ -106,7 +106,7 @@ class SettingsScreen extends StatelessWidget {
               _buildSourceCredit(
                 'INES',
                 'Instituto Nacional de Educação de Surdos',
-                'http://dicionario.ines.gov.br/',
+                'https://dicionario.ines.gov.br/',
                 'Os direitos autorais dos vídeos e imagens pertencem ao INES. O uso neste aplicativo é para fins educacionais e de acessibilidade.',
               ),
               _buildSourceCredit(
