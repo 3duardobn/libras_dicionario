@@ -126,7 +126,6 @@ libras_dictionary/windows/
 libras_dictionary/linux/
 libras_dictionary/macos/
 libras_dictionary/ios/
-libras_dictionary/web/
 
 # Flutter SDK embutido
 flutter/

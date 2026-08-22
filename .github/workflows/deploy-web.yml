@@ -1,0 +1,53 @@
+name: Deploy Web (Cloudflare Pages)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'libras_dictionary/**'
+      - '.github/workflows/deploy-web.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  build-deploy:
+    name: Build and deploy web bundle
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.7'
+          channel: stable
+          cache: true
+
+      - name: Get Flutter dependencies
+        working-directory: libras_dictionary
+        run: flutter pub get
+
+      - name: Analyze
+        working-directory: libras_dictionary
+        run: flutter analyze
+
+      - name: Test
+        working-directory: libras_dictionary
+        run: flutter test
+
+      - name: Build web
+        working-directory: libras_dictionary
+        run: flutter build web --release
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy build/web --project-name=libras-dicionario
+          workingDirectory: libras_dictionary
