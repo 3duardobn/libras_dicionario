@@ -1,12 +1,14 @@
+import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:diacritic/diacritic.dart' show removeDiacritics;
 import 'package:flutter/foundation.dart' show kDebugMode, visibleForTesting;
 import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
 
 import 'models.dart';
+import 'platform/ines_cache_stub.dart'
+    if (dart.library.js_interop) 'platform/ines_cache_web.dart'
+    if (dart.library.io) 'platform/ines_cache_io.dart';
 
 const requestTimeout = Duration(seconds: 10);
 
@@ -31,8 +33,10 @@ void log(List<Object?> parts) {
 
 String normalize(String s) => removeDiacritics(s).toLowerCase();
 
+/// Word-boundary match that also accepts numbered variants, so
+/// "diferente" finds INES's "diferente1" and "diferente2".
 RegExp wordBoundRegex(String query) =>
-    RegExp('\\b${RegExp.escape(normalize(query))}\\b', unicode: true);
+    RegExp('\\b${RegExp.escape(normalize(query))}\\d*\\b', unicode: true);
 
 /// GET `urlStr` with a request timeout. Returns the response body.
 /// Throws on timeout or non-200 status.
@@ -54,37 +58,17 @@ List<dynamic>? parseInesBody(String body) {
   final start = body.indexOf('[');
   final end = body.lastIndexOf(']');
   if (start == -1 || end == -1) return null;
-  return json.decode(body.substring(start, end + 1)) as List<dynamic>;
-}
-
-Future<File> _inesCacheFile() async {
-  final dir = await getApplicationSupportDirectory();
-  return File('${dir.path}/ines_palavras.json');
-}
-
-Future<void> _saveInesToDisk(String body) async {
   try {
-    final f = await _inesCacheFile();
-    await f.writeAsString(body);
+    return json.decode(body.substring(start, end + 1)) as List<dynamic>;
   } catch (e) {
-    log(['INES: could not persist cache:', e]);
+    log(['INES: could not parse body:', e]);
+    return null;
   }
 }
 
-Future<List<dynamic>?> _loadInesFromDisk() async {
-  try {
-    final f = await _inesCacheFile();
-    if (await f.exists()) {
-      return parseInesBody(await f.readAsString());
-    }
-  } catch (e) {
-    log(['INES: could not read disk cache:', e]);
-  }
-  return null;
-}
-
-/// INES word list: memory cache, else network (persisting to disk),
-/// else disk cache (offline). Throws when all fail.
+/// INES word list: memory cache, else network (persisting via the
+/// platform cache), else platform cache (offline/script-injected).
+/// Throws when all fail.
 Future<List<dynamic>> loadInesData() async {
   final cached = _inesCache;
   if (cached != null) return cached;
@@ -95,14 +79,14 @@ Future<List<dynamic>> loadInesData() async {
       throw Exception('INES: resposta em formato inesperado');
     }
     _inesCache = data;
-    _saveInesToDisk(body);
+    unawaited(saveInesCache(body));
     return data;
   } catch (e) {
-    log(['INES network fetch failed, trying disk cache:', e]);
-    final disk = await _loadInesFromDisk();
-    if (disk != null) {
-      _inesCache = disk;
-      return disk;
+    log(['INES network fetch failed, trying platform cache:', e]);
+    final cached2 = await loadInesCache();
+    if (cached2 != null) {
+      _inesCache = cached2;
+      return cached2;
     }
     rethrow;
   }

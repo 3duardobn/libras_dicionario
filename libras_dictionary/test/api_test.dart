@@ -29,6 +29,14 @@ void main() {
       expect(r.hasMatch('carcasa'), isFalse);
     });
 
+    test('matches numbered variants (diferente1, diferente2)', () {
+      final r = api.wordBoundRegex('diferente');
+      expect(r.hasMatch('diferente1'), isTrue);
+      expect(r.hasMatch('diferente2'), isTrue);
+      expect(r.hasMatch('diferente12'), isTrue);
+      expect(r.hasMatch('diferentemente'), isFalse);
+    });
+
     test('query is normalized', () {
       expect(api.wordBoundRegex('Ação').hasMatch('acao urgente'), isTrue);
     });
@@ -221,6 +229,22 @@ void main() {
         'https://dicionario.ines.gov.br/public/media/palavras/images/casa.jpg',
       );
       expect(items.first.source, 'INES');
+    });
+
+    test('returns numbered variants of the base word', () async {
+      api.setInesCacheForTest([
+        {'palavra': 'DIFERENTE', 'video': 'diferente.mp4'},
+        {'palavra': 'DIFERENTE1', 'video': 'diferente1.mp4'},
+        {'palavra': 'DIFERENTE2', 'video': 'diferente2.mp4'},
+        {'palavra': 'DIFERENTEMENTE'},
+      ]);
+      addTearDown(() => api.setInesCacheForTest(null));
+
+      final items = await api.fetchInes('diferente');
+      expect(
+        items.map((i) => i.title).toSet(),
+        {'DIFERENTE', 'DIFERENTE1', 'DIFERENTE2'},
+      );
     });
   });
 

@@ -26,6 +26,7 @@ const imageError = 'Erro ao carregar a imagem.';
 const youtubeError = 'Não foi possível reproduzir o vídeo.';
 const openInYoutube = 'Abrir no YouTube';
 const playVideo = 'Reproduzir vídeo';
+const linkCopied = 'Link copiado para a área de transferência';
 const shareSign = 'Compartilhar sinal';
 const expandHint = 'Toque para expandir';
 const collapseHint = 'Toque para recolher';

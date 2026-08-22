@@ -1,22 +1,38 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart'
+    show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'api.dart' as api;
 import 'models.dart';
+import 'platform/share_stub.dart'
+    if (dart.library.js_interop) 'platform/share_web.dart'
+    if (dart.library.io) 'platform/share_mobile.dart';
 import 'strings.dart' as s;
 
-const allSources = {
+const mobileSources = {
   'INES',
   'UFV',
   'RedeSurdos',
   'LibrasAcademicaUFF',
   'SpreadTheSign',
 };
+const webSources = {
+  'INES',
+  'RedeSurdos',
+  'LibrasAcademicaUFF',
+};
+
+/// Sources available on the current platform. Browsers cannot reach
+/// UFV or SpreadTheSign (no CORS headers), so web builds hide them.
+final Set<String> allSources = kIsWeb ? webSources : mobileSources;
+
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
+
 const maxRecentSearches = 10;
 
 /// Global app state. Widgets rebuild via `ListenableBuilder`.
@@ -197,9 +213,10 @@ class AppState extends ChangeNotifier {
     final favorites = p.getStringList('favorites') ?? [];
 
     _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
-    _enabledSources = (enabledSources != null && enabledSources.isNotEmpty)
-        ? enabledSources.toSet()
-        : allSources;
+    // Drop sources that don't exist on this platform (e.g. prefs saved
+    // on mobile then hit from a web browser).
+    final storedSources = enabledSources?.toSet().intersection(allSources) ?? {};
+    _enabledSources = storedSources.isNotEmpty ? storedSources : allSources;
     _isShareMinimal = shareMin;
     _showYoutubeButton = showYt ?? true;
     _recentSearches = recents;
@@ -327,15 +344,8 @@ class AppState extends ChangeNotifier {
 
   // --- Share / external links ---
 
-  static const _shareChannel = MethodChannel('dev.edbn.libras_dictionary/share');
-
-  Future<void> share(String text, String subject) async {
-    try {
-      await _shareChannel.invokeMethod('share', {'text': text, 'subject': subject});
-    } on PlatformException catch (e) {
-      api.log(['Failed to share:', e.message]);
-    }
-  }
+  Future<void> share(String text, String subject) =>
+      shareText(text, subject);
 
   void shareItem(DictItem item) {
     final text = _isShareMinimal

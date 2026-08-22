@@ -13,6 +13,7 @@ dependencies:
 
   cupertino_icons: ^1.0.8
   http: ^1.6.0
+  web: ^1.1.0
   video_player: ^2.11.1
   chewie: ^1.13.1
   flutter_html: ^3.0.0

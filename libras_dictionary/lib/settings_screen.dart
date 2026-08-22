@@ -92,7 +92,7 @@ class SettingsScreen extends StatelessWidget {
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  for (final source in ['INES', 'UFV', 'RedeSurdos', 'LibrasAcademicaUFF', 'SpreadTheSign'])
+                  for (final source in st.allSources)
                     SwitchListTile(
                       title: Text(_sourceLabels[source] ?? source),
                       value: state.enabledSources.contains(source),
