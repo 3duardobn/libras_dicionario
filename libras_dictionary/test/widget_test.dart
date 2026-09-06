@@ -13,59 +13,73 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
-import 'package:libras_dictionary/api.dart' as api;
+import 'package:libras_dictionary/database.dart';
 import 'package:libras_dictionary/main.dart';
 import 'package:libras_dictionary/state.dart' as st;
 import 'package:libras_dictionary/strings.dart' as s;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-http.Client? _originalClient;
+Future<Database> _createTestDatabase() async {
+  final db = await databaseFactoryFfi.openDatabase(
+    inMemoryDatabasePath,
+    options: OpenDatabaseOptions(
+      version: 1,
+      onCreate: (db, version) async {
+        await db.execute('''
+          CREATE TABLE signs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            norm_word TEXT NOT NULL,
+            title TEXT NOT NULL,
+            source TEXT NOT NULL,
+            description TEXT,
+            exemplo TEXT,
+            libras TEXT,
+            video_url TEXT,
+            image_url TEXT,
+            youtube_id TEXT,
+            link TEXT
+          )
+        ''');
+        await db.execute('''
+          CREATE VIRTUAL TABLE signs_fts USING fts5(
+            norm_word,
+            title,
+            content='signs',
+            content_rowid='id'
+          )
+        ''');
 
-/// Canned responses for every source the app queries.
-Future<http.Response> _respond(http.Request request) async {
-  final url = request.url.toString();
-  if (url.startsWith('${api.inesBaseUrl}/public/site/js/palavras.js')) {
-    final data = json.encode([
-      {
-        'palavra': 'casa',
-        'video': 'casa.mp4',
-        'image': '',
-        'descricao': 'Moradia, habitação.',
-        'exemplo': 'Minha casa é grande.',
-        'libras': 'C@SA',
+        await db.insert('signs', {
+          'norm_word': 'casa',
+          'title': 'casa',
+          'source': 'INES',
+          'video_url': 'https://ex.com/casa_ines.mp4',
+          'description': 'Moradia, habitação.',
+          'exemplo': 'Minha casa é grande.',
+          'libras': 'C@SA',
+        });
+        await db.insert('signs', {
+          'norm_word': 'casa',
+          'title': 'casa',
+          'source': 'RedeSurdos',
+          'video_url': 'https://ex.com/casa_rs.mp4',
+          'description': 'Sinal de casa.',
+        });
+        await db.insert('signs', {
+          'norm_word': 'casaco',
+          'title': 'casaco',
+          'source': 'INES',
+          'video_url': 'https://ex.com/casaco.mp4',
+        });
+
+        await db.execute("INSERT INTO signs_fts(signs_fts) VALUES('rebuild')");
       },
-      {'palavra': 'casaco', 'video': '', 'image': ''},
-    ]);
-    return http.Response(data, 200, headers: {
-      'content-type': 'application/json; charset=utf-8',
-    });
-  }
-  if (url.startsWith(api.redesurdosSearchUrl)) {
-    return http.Response(
-      json.encode([
-        {
-          'title': {'rendered': 'casa'},
-          'content': {'rendered': '<p>Sinal de casa.</p>'},
-          'excerpt': {'rendered': '<p>Sinal de casa.</p>'},
-          'link': 'https://redesurdosce.ufc.br/casa',
-        }
-      ]),
-      200,
-      headers: {'content-type': 'application/json; charset=utf-8'},
-    );
-  }
-  if (url.startsWith(api.uffSearchUrl)) {
-    return http.Response('[]', 200,
-        headers: {'content-type': 'application/json; charset=utf-8'});
-  }
-  // UFV search page / detail and SpreadTheSign: no matches.
-  return http.Response('<html></html>', 200);
+    ),
+  );
+  return db;
 }
 
 Future<void> _pumpHome(WidgetTester tester) async {
@@ -77,20 +91,30 @@ Future<void> _pumpHome(WidgetTester tester) async {
 
 Future<void> _search(WidgetTester tester, String query) async {
   await tester.enterText(find.byType(TextField), query);
-  await tester.tap(find.widgetWithText(ElevatedButton, s.searchButton));
-  await tester.pumpAndSettle();
+  await tester.pump();
+  await st.appState.performSearch(query);
+  await tester.pump();
 }
 
 void main() {
-  setUp(() {
-    _originalClient = api.httpClient;
-    api.httpClient = MockClient(_respond);
-    api.setInesCacheForTest(null);
+  setUpAll(() {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  });
+
+  late Database testDb;
+
+  setUp(() async {
+    testDb = await _createTestDatabase();
+    LibrasDatabase.instance.setDatabaseForTest(testDb);
+    LibrasDatabase.instance.isEnabled = true;
+    LibrasDatabase.instance.setCachedWordsForTest(['casa', 'casaco']);
     st.appState.resetForTest();
   });
 
-  tearDown(() {
-    api.httpClient = _originalClient!;
+  tearDown(() async {
+    LibrasDatabase.instance.setDatabaseForTest(null);
+    await testDb.close();
   });
 
   testWidgets('app renders the home page', (tester) async {
@@ -108,7 +132,7 @@ void main() {
 
     expect(find.text('casa (INES)'), findsOneWidget);
     expect(find.text('casa (RedeSurdos)'), findsOneWidget);
-    // \bcasa\b must not match "casaco".
+    // Exact word matching must not match "casaco".
     expect(find.text('casaco (INES)'), findsNothing);
   });
 
@@ -144,13 +168,10 @@ void main() {
     expect(find.text('casa (INES)'), findsOneWidget);
   });
 
-  testWidgets('failed sources show a warning banner', (tester) async {
-    api.httpClient = MockClient((request) async {
-      if (request.url.toString().startsWith(api.redesurdosSearchUrl)) {
-        return http.Response('server error', 500);
-      }
-      return _respond(request);
-    });
+  testWidgets('failed sources show a warning banner when database fails',
+      (tester) async {
+    // Delete the table so rawQuery throws SqfliteDatabaseException
+    await testDb.execute('DROP TABLE signs');
 
     await _pumpHome(tester);
     await _search(tester, 'casa');
@@ -159,8 +180,5 @@ void main() {
       find.textContaining(s.sourcesUnavailable('')),
       findsOneWidget,
     );
-    // The failed source contributes no cards; the others still do.
-    expect(find.text('casa (RedeSurdos)'), findsNothing);
-    expect(find.text('casa (INES)'), findsOneWidget);
   });
 }

@@ -68,8 +68,7 @@ class _HomePageState extends State<HomePage> {
         final suggestions =
             state.searchQuery.isNotEmpty &&
                 state.searchQuery != state.lastSearched &&
-                !state.isSearching &&
-                state.isSourceActive('INES')
+                !state.isSearching
             ? st.suggestionsFor(state.searchQuery, 6)
             : const <String>[];
 

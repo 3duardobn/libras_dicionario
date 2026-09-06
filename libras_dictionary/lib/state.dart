@@ -23,6 +23,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'api.dart' as api;
+import 'database.dart';
 import 'models.dart';
 import 'platform/share_stub.dart'
     if (dart.library.js_interop) 'platform/share_web.dart'
@@ -317,14 +318,13 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  /// Warms the INES word list (autocomplete + offline cache). Failures
-  /// are logged, never surfaced — the list loads again on first search.
-  Future<void> preloadInes() async {
+  /// Inicializa o banco de dados offline e aquece a lista de palavras para sugestões
+  Future<void> preloadDatabase() async {
     try {
-      await api.loadInesData();
-      api.log(['INES preload OK:', api.inesWords().length, 'words']);
+      await LibrasDatabase.instance.database;
+      api.log(['Banco offline SQLite carregado com sucesso']);
     } catch (e) {
-      api.log(['INES preload failed:', e]);
+      api.log(['Erro ao carregar banco offline:', e]);
     }
   }
 
@@ -389,12 +389,12 @@ class AppState extends ChangeNotifier {
 
 // --- Autocomplete ---
 
-/// Autocomplete suggestions from the INES word list: prefix matches
+/// Autocomplete suggestions from the offline database word list: prefix matches
 /// first, then substring matches, capped at `limit`.
 List<String> suggestionsFor(String query, int limit) {
   if (query.length < 2) return [];
   final nq = api.normalize(query);
-  final words = api.inesWords();
+  final words = LibrasDatabase.instance.allWords;
   final scored = <(int, String)>[];
   for (final word in words) {
     final nw = api.normalize(word);

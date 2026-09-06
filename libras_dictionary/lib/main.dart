@@ -30,8 +30,8 @@ void main() async {
     applyDebugHttpOverrides();
   }
   await st.appState.loadSettings();
-  // Fire-and-forget: warms autocomplete + offline cache in background.
-  st.appState.preloadInes();
+  // Fire-and-forget: inicializa banco local e lista de sugestões
+  st.appState.preloadDatabase();
   runApp(const LibrasDictionaryApp());
 }
 

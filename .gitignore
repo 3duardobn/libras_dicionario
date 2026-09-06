@@ -138,3 +138,7 @@ flutter/
 **/.lsp/
 **/.clojuredart/
 **/.cpcache/
+
+# Python Scraper Tooling
+tools/scraper/.venv/
+tools/scraper/data/
