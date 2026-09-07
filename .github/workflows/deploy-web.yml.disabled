@@ -1,3 +1,7 @@
+# DESATIVADO: versão web não é mais publicada no Cloudflare Pages.
+# Renomeado de deploy-web.yml para *.disabled para o GitHub Actions não executar.
+# Para reativar, renomeie de volta para deploy-web.yml e configure os secrets
+# CLOUDFLARE_API_TOKEN e CLOUDFLARE_ACCOUNT_ID.
 name: Deploy Web (Cloudflare Pages)
 
 on:
