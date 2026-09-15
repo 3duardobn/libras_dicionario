@@ -45,10 +45,26 @@ class LibrasDatabase {
   Future<Database> _initDatabase() async {
     final docsDir = await getApplicationDocumentsDirectory();
     final dbPath = p.join(docsDir.path, 'libras.db');
+    const dbVersion = 3;
 
-    // Se o banco ainda não foi copiado do asset para a pasta local
+    // Se o banco ainda não foi copiado do asset para a pasta local ou precisa de atualização
     final file = File(dbPath);
-    if (!await file.exists()) {
+    bool shouldCopy = !await file.exists();
+
+    if (!shouldCopy) {
+      try {
+        final existingDb = await openDatabase(dbPath, readOnly: true);
+        final v = await existingDb.getVersion();
+        await existingDb.close();
+        if (v < dbVersion) {
+          shouldCopy = true;
+        }
+      } catch (_) {
+        shouldCopy = true;
+      }
+    }
+
+    if (shouldCopy) {
       final byteData = await rootBundle.load('assets/libras.db');
       final bytes = byteData.buffer.asUint8List(
         byteData.offsetInBytes,
@@ -85,7 +101,7 @@ class LibrasDatabase {
     } catch (_) {}
   }
 
-  /// Busca sinais diretamente no SQLite local usando FTS5 e busca exata.
+  /// Busca sinais diretamente no SQLite local usando correspondência exata, prefixo e FTS5.
   Future<List<DictItem>> search(String query, {List<String>? sources}) async {
     final db = await database;
     if (db == null) return [];
@@ -97,34 +113,60 @@ class LibrasDatabase {
         ? 'AND source IN (${sources.map((s) => "'$s'").join(', ')})'
         : '';
 
-    // 1. Busca exata e por prefixo na tabela signs
+    // 1. Busca exata na tabela signs
     final exactRows = await db.rawQuery('''
-      SELECT title, source, description, exemplo, libras, video_url, image_url, youtube_id, link
+      SELECT DISTINCT title, source, description, exemplo, libras, video_url, image_url, youtube_id, link
       FROM signs
-      WHERE (norm_word = ? OR norm_word LIKE ?) $sourceFilter
-      ORDER BY CASE WHEN norm_word = ? THEN 0 ELSE 1 END, title ASC
+      WHERE norm_word = ? $sourceFilter
+      ORDER BY title ASC
       LIMIT 100
-    ''', [norm, '$norm%', norm]);
+    ''', [norm]);
 
     if (exactRows.isNotEmpty) {
-      return exactRows.map(_rowToDictItem).toList();
+      return _deduplicateItems(exactRows.map(_rowToDictItem).toList());
     }
 
-    // 2. Se não encontrar exato/prefixo, usa o FTS5 (busca aproximada/tolerante)
+    // 2. Busca por prefixo na tabela signs
+    final prefixRows = await db.rawQuery('''
+      SELECT DISTINCT title, source, description, exemplo, libras, video_url, image_url, youtube_id, link
+      FROM signs
+      WHERE norm_word LIKE ? $sourceFilter
+      ORDER BY LENGTH(title) ASC, title ASC
+      LIMIT 100
+    ''', ['$norm%']);
+
+    if (prefixRows.isNotEmpty) {
+      return _deduplicateItems(prefixRows.map(_rowToDictItem).toList());
+    }
+
+    // 3. Se não encontrar exato/prefixo, usa o FTS5 (busca aproximada/tolerante)
     try {
       final ftsQuery = '$norm*';
       final ftsRows = await db.rawQuery('''
-        SELECT s.title, s.source, s.description, s.exemplo, s.libras, s.video_url, s.image_url, s.youtube_id, s.link
+        SELECT DISTINCT s.title, s.source, s.description, s.exemplo, s.libras, s.video_url, s.image_url, s.youtube_id, s.link
         FROM signs_fts f
         JOIN signs s ON f.rowid = s.id
         WHERE signs_fts MATCH ? $sourceFilter
         LIMIT 100
       ''', [ftsQuery]);
 
-      return ftsRows.map(_rowToDictItem).toList();
+      return _deduplicateItems(ftsRows.map(_rowToDictItem).toList());
     } catch (_) {
       return [];
     }
+  }
+
+  List<DictItem> _deduplicateItems(List<DictItem> items) {
+    final seen = <String>{};
+    final unique = <DictItem>[];
+    for (final item in items) {
+      final key =
+          '${item.source}|${item.title}|${item.videoUrl}|${item.youtubeId}|${item.imageUrl}|${item.description}';
+      if (seen.add(key)) {
+        unique.add(item);
+      }
+    }
+    return unique;
   }
 
   /// Autocomplete instantâneo: busca palavras únicas para sugestão

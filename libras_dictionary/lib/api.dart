@@ -52,6 +52,7 @@ const allDictionarySources = [
   'RedeSurdos',
   'UFV',
   'LibrasAcademicaUFF',
+  'SpreadTheSign',
 ];
 
 /// Executa busca 100% offline no banco local SQLite (FTS5 + exato).
