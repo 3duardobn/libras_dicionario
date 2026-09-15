@@ -32,7 +32,7 @@ class RateLimitedSession:
     def set_headers(self, headers: dict):
         self.session.headers.update(headers)
 
-    def get(self, url: str, **kwargs) -> requests.Response:
+    def get(self, url: str, timeout: float = 15.0, **kwargs) -> requests.Response:
         retries = 0
         current_backoff = 1.0
 
@@ -45,7 +45,7 @@ class RateLimitedSession:
             self.last_request_time = time.time()
 
             try:
-                resp = self.session.get(url, **kwargs)
+                resp = self.session.get(url, timeout=timeout, **kwargs)
 
                 # Respeita o status 429 (Too Many Requests) e cabeçalho Retry-After
                 if resp.status_code == 429:

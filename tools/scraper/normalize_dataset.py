@@ -102,7 +102,13 @@ def generate_index_keys(raw_title: str) -> set:
 
 def build_unified_dataset():
     data_dir = "tools/scraper/data"
-    sources = ["ines.json", "librasacademicauff.json", "redesurdos.json", "ufv.json"]
+    sources = [
+        "ines.json",
+        "librasacademicauff.json",
+        "redesurdos.json",
+        "ufv.json",
+        "spreadthesign.json",
+    ]
 
     all_entries = []
     for src in sources:

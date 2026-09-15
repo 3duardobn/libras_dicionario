@@ -113,6 +113,38 @@ def step1_collect_catalog(session: RateLimitedSession) -> List[Dict[str, str]]:
     print(f"[SpreadTheSign] Catálogo final salvo com {len(catalog_list)} palavras em {CATALOG_FILE}.")
     return catalog_list
 
+VISITED_FILE = os.path.join(DATA_DIR, "sts_visited.json")
+
+def format_item_for_output(wid: str, item: Dict) -> Optional[Dict]:
+    title = item.get("title")
+    video_url = item.get("video_url")
+    if not title or not video_url:
+        return None
+    desc = item.get("description")
+    cat = item.get("category")
+    if not desc and cat:
+        desc = f"Categoria: {cat}"
+    return {
+        "source": "SpreadTheSign",
+        "title": title.strip(),
+        "description": desc,
+        "exemplo": None,
+        "libras": None,
+        "video_url": video_url,
+        "image_url": item.get("image_url"),
+        "youtube_id": None,
+        "link": item.get("link") or f"{BASE_URL}/pt.br/word/{wid}/"
+    }
+
+def export_formatted_output(scraped_data: Dict[str, Dict]):
+    formatted = []
+    for wid, item in scraped_data.items():
+        fmt = format_item_for_output(wid, item)
+        if fmt:
+            formatted.append(fmt)
+    with open(FINAL_OUTPUT_FILE, "w", encoding="utf-8") as f:
+        json.dump(formatted, f, ensure_ascii=False, indent=2)
+
 def step2_scrape_details(session: RateLimitedSession, catalog: List[Dict[str, str]]):
     """
     Fase 2: Percorre cada palavra do catálogo, requisita a página detalhada (AJAX)
@@ -129,6 +161,30 @@ def step2_scrape_details(session: RateLimitedSession, catalog: List[Dict[str, st
         except Exception as e:
             print(f"[Aviso] Falha ao carregar checkpoint: {e}")
 
+    visited_ids: Set[str] = set()
+    if os.path.exists(VISITED_FILE):
+        try:
+            with open(VISITED_FILE, "r", encoding="utf-8") as f:
+                visited_ids = set(json.load(f))
+            print(f"[SpreadTheSign] {len(visited_ids)} IDs previamente visitados.")
+        except Exception as e:
+            print(f"[Aviso] Falha ao carregar visited_ids: {e}")
+    else:
+        # Se não existe sts_visited.json mas temos sts_progress.json,
+        # inicializa visited_ids com os itens até o último índice processado (6861)
+        # para não re-requisitar os ~4185 itens que sabidamente não tinham vídeo em Libras.
+        prog_keys = set(scraped_data.keys())
+        last_idx = -1
+        for idx, item in enumerate(catalog):
+            if item["id"] in prog_keys:
+                last_idx = idx
+        if last_idx > 0:
+            for idx in range(last_idx + 1):
+                visited_ids.add(catalog[idx]["id"])
+            print(f"[SpreadTheSign] Inicializado {len(visited_ids)} IDs visitados até o índice {last_idx}.")
+            with open(VISITED_FILE, "w", encoding="utf-8") as f:
+                json.dump(list(visited_ids), f)
+
     total = len(catalog)
     start_time = time.time()
     processed_this_session = 0
@@ -140,7 +196,7 @@ def step2_scrape_details(session: RateLimitedSession, catalog: List[Dict[str, st
 
     for idx, item in enumerate(catalog, 1):
         wid = item["id"]
-        if wid in scraped_data and scraped_data[wid].get("video_url"):
+        if wid in visited_ids:
             continue
 
         detail_url = f"{BASE_URL}{item['relative_url']}"
@@ -154,6 +210,7 @@ def step2_scrape_details(session: RateLimitedSession, catalog: List[Dict[str, st
                 resp = session.get(detail_url, headers=AJAX_HEADERS)
 
             if resp.status_code == 404:
+                visited_ids.add(wid)
                 continue
             if resp.status_code != 200:
                 print(f"[Erro {resp.status_code} na palavra {wid}]")
@@ -182,15 +239,20 @@ def step2_scrape_details(session: RateLimitedSession, catalog: List[Dict[str, st
                     "source": "SpreadTheSign"
                 }
 
+            visited_ids.add(wid)
             processed_this_session += 1
 
             if processed_this_session % 50 == 0:
                 with open(PROGRESS_FILE, "w", encoding="utf-8") as f:
                     json.dump(scraped_data, f, ensure_ascii=False)
+                with open(VISITED_FILE, "w", encoding="utf-8") as f:
+                    json.dump(list(visited_ids), f)
+                export_formatted_output(scraped_data)
+
                 elapsed = time.time() - start_time
                 rate = processed_this_session / elapsed if elapsed > 0 else 0
-                remaining = (total - idx) / rate if rate > 0 else 0
-                print(f"Progresso: {idx}/{total} ({idx/total*100:.1f}%) | {len(scraped_data)} com vídeo | {rate:.1f} req/s | Restante est.: {remaining/60:.1f} min", flush=True)
+                remaining = (total - len(visited_ids)) / rate if rate > 0 else 0
+                print(f"Progresso: {len(visited_ids)}/{total} ({len(visited_ids)/total*100:.1f}%) | {len(scraped_data)} com vídeo | {rate:.1f} req/s | Restante est.: {remaining/60:.1f} min", flush=True)
 
         except KeyboardInterrupt:
             print("\n[SpreadTheSign] Interrompido pelo usuário. Salvando checkpoint...")
@@ -201,13 +263,11 @@ def step2_scrape_details(session: RateLimitedSession, catalog: List[Dict[str, st
     # Salva estado final
     with open(PROGRESS_FILE, "w", encoding="utf-8") as f:
         json.dump(scraped_data, f, ensure_ascii=False)
+    with open(VISITED_FILE, "w", encoding="utf-8") as f:
+        json.dump(list(visited_ids), f)
+    export_formatted_output(scraped_data)
 
-    # Converte para a lista final padronizada compatível com o pipeline
-    final_list = list(scraped_data.values())
-    with open(FINAL_OUTPUT_FILE, "w", encoding="utf-8") as f:
-        json.dump(final_list, f, ensure_ascii=False, indent=2)
-
-    print(f"\n[SpreadTheSign] Raspagem concluída! {len(final_list)} sinais salvos em {FINAL_OUTPUT_FILE}")
+    print(f"\n[SpreadTheSign] Raspagem concluída! {len(scraped_data)} sinais salvos em {FINAL_OUTPUT_FILE}")
 
 def main():
     os.makedirs(DATA_DIR, exist_ok=True)

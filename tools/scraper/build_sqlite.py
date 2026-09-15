@@ -81,6 +81,7 @@ def build_sqlite(json_path="tools/scraper/data/libras_unified.json", db_path="to
     )
     """)
     cur.execute("INSERT INTO signs_fts(signs_fts) VALUES('rebuild')")
+    cur.execute("PRAGMA user_version = 3")
 
     conn.commit()
     conn.close()

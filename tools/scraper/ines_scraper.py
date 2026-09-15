@@ -17,8 +17,8 @@ import json
 import re
 import requests
 
-INES_URL = "https://dicionario.ines.gov.br/public/site/js/palavras.js"
-INES_BASE = "https://dicionario.ines.gov.br"
+INES_URL = "http://dicionario.ines.gov.br/public/site/js/palavras.js"
+INES_BASE = "http://dicionario.ines.gov.br"
 
 def scrape_ines():
     print("Baixando dados do INES...")
