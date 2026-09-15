@@ -37,3 +37,37 @@ class DictItem {
   final String? link;
   final String? source;
 }
+
+/// Metadata when multiple entries share the same title and source
+class DisambiguationInfo {
+  const DisambiguationInfo({
+    required this.index,
+    required this.total,
+  });
+
+  final int index;
+  final int total;
+}
+
+/// Agrupa e calcula as desambiguações para sinais com mesmo título e fonte
+Map<int, DisambiguationInfo> computeDisambiguations(List<DictItem> items) {
+  final counts = <String, int>{};
+  for (final item in items) {
+    final key = '${item.source?.toUpperCase()}_${item.title?.toUpperCase()}';
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+
+  final currentIndices = <String, int>{};
+  final result = <int, DisambiguationInfo>{};
+  for (var i = 0; i < items.length; i++) {
+    final item = items[i];
+    final key = '${item.source?.toUpperCase()}_${item.title?.toUpperCase()}';
+    final total = counts[key] ?? 1;
+    if (total > 1) {
+      final cur = (currentIndices[key] ?? 0) + 1;
+      currentIndices[key] = cur;
+      result[i] = DisambiguationInfo(index: cur, total: total);
+    }
+  }
+  return result;
+}

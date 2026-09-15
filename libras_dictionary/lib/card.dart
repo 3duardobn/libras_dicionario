@@ -57,9 +57,14 @@ Widget _htmlSection(String label, String data, bool italic) {
 
 /// Result card for one dictionary entry.
 class DictionaryItemCard extends StatefulWidget {
-  const DictionaryItemCard({super.key, required this.item});
+  const DictionaryItemCard({
+    super.key,
+    required this.item,
+    this.disambiguation,
+  });
 
   final DictItem item;
+  final DisambiguationInfo? disambiguation;
 
   @override
   State<DictionaryItemCard> createState() => _DictionaryItemCardState();
@@ -101,13 +106,46 @@ class _DictionaryItemCardState extends State<DictionaryItemCard> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
-                      child: Text(
-                        '${item.title} (${item.source})',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                          color: Colors.white,
-                        ),
+                      child: Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          Text(
+                            '${item.title} (${item.source})',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                              color: Colors.white,
+                            ),
+                          ),
+                          if (widget.disambiguation != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.25),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                s.variationBadge(
+                                  widget.disambiguation!.index,
+                                  widget.disambiguation!.total,
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                     IconButton(
@@ -131,6 +169,25 @@ class _DictionaryItemCardState extends State<DictionaryItemCard> {
                   ],
                 ),
               ),
+              if (!_expanded &&
+                  description != null &&
+                  description.trim().isNotEmpty)
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  child: Text(
+                    description.replaceAll(RegExp(r'<[^>]*>'), '').trim(),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontStyle: FontStyle.italic,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade700,
+                    ),
+                  ),
+                ),
               if (_expanded)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,7 +247,9 @@ class _DictionaryItemCardState extends State<DictionaryItemCard> {
                       Padding(
                         padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
                         child: Image.network(
-                          imageUrl,
+                          imageUrl.startsWith('https://dicionario.ines.gov.br')
+                              ? imageUrl.replaceFirst('https://', 'http://')
+                              : imageUrl,
                           fit: BoxFit.contain,
                           loadingBuilder: (context, child, progress) =>
                               progress == null

@@ -92,7 +92,9 @@ Future<void> _pumpHome(WidgetTester tester) async {
 Future<void> _search(WidgetTester tester, String query) async {
   await tester.enterText(find.byType(TextField), query);
   await tester.pump();
-  await st.appState.performSearch(query);
+  await tester.runAsync(() async {
+    await st.appState.performSearch(query);
+  });
   await tester.pump();
 }
 
@@ -171,7 +173,9 @@ void main() {
   testWidgets('failed sources show a warning banner when database fails',
       (tester) async {
     // Delete the table so rawQuery throws SqfliteDatabaseException
-    await testDb.execute('DROP TABLE signs');
+    await tester.runAsync(() async {
+      await testDb.execute('DROP TABLE signs');
+    });
 
     await _pumpHome(tester);
     await _search(tester, 'casa');
@@ -180,5 +184,56 @@ void main() {
       find.textContaining(s.sourcesUnavailable('')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('disambiguation badges and preview display for multiple entries',
+      (tester) async {
+    await tester.runAsync(() async {
+      await testDb.insert('signs', {
+        'norm_word': 'bola',
+        'title': 'bola',
+        'source': 'INES',
+        'video_url': 'https://ex.com/bola1.mp4',
+        'description': 'Bola de futebol.',
+      });
+      await testDb.insert('signs', {
+        'norm_word': 'bola',
+        'title': 'bola',
+        'source': 'INES',
+        'video_url': 'https://ex.com/bola2.mp4',
+        'description': 'Bola de gude.',
+      });
+    });
+
+    await _pumpHome(tester);
+    await _search(tester, 'bola');
+
+    expect(find.text(s.variationBadge(1, 2)), findsOneWidget);
+    expect(find.text(s.variationBadge(2, 2)), findsOneWidget);
+    expect(find.text('Bola de futebol.'), findsOneWidget);
+    expect(find.text('Bola de gude.'), findsOneWidget);
+  });
+
+  testWidgets('clearing search with clear button resets results and shows history',
+      (tester) async {
+    await _pumpHome(tester);
+    await _search(tester, 'casa');
+
+    expect(find.text('casa (INES)'), findsOneWidget);
+
+    // Tap clear button
+    await tester.tap(find.byIcon(Icons.clear));
+    await tester.pumpAndSettle();
+
+    // Results are cleared
+    expect(find.text('casa (INES)'), findsNothing);
+    // Recent searches are shown
+    expect(find.text(s.recentSearches), findsOneWidget);
+    expect(find.widgetWithText(InputChip, 'casa'), findsOneWidget);
+
+    // Delete recent search
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(InputChip, 'casa'), findsNothing);
   });
 }

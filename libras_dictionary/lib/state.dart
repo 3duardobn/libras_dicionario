@@ -126,6 +126,15 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clearSearch() {
+    _searchQuery = '';
+    _lastSearched = null;
+    _searchResults = [];
+    _failedSources = [];
+    _errorMessage = null;
+    notifyListeners();
+  }
+
   // --- Favorites ---
 
   String _itemToJson(DictItem item) => json.encode({
@@ -190,6 +199,19 @@ class AppState extends ChangeNotifier {
     _recentSearches = updated;
     notifyListeners();
     unawaited(_persistRecents(updated));
+  }
+
+  void removeRecentSearch(String query) {
+    final updated = _recentSearches.where((q) => q != query).toList();
+    _recentSearches = updated;
+    notifyListeners();
+    unawaited(_persistRecents(updated));
+  }
+
+  void clearRecentSearches() {
+    _recentSearches = [];
+    notifyListeners();
+    unawaited(_persistRecents([]));
   }
 
   Future<void> _persistRecents(List<String> recents) async {

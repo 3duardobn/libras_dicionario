@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
     <base-config cleartextTrafficPermitted="false" />
-    <!-- UFF serves its sign videos over plain HTTP; everything else is HTTPS. -->
+    <!-- UFF and INES serve sign videos over plain HTTP; everything else is HTTPS. -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="false">librasacademica.uff.br</domain>
+        <domain includeSubdomains="false">dicionario.ines.gov.br</domain>
     </domain-config>
 </network-security-config>

@@ -34,15 +34,33 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchTextChanged);
+  }
+
+  void _onSearchTextChanged() {
+    setState(() {});
+  }
+
+  @override
   void dispose() {
+    _searchController.removeListener(_onSearchTextChanged);
     _searchController.dispose();
     super.dispose();
   }
 
   void _runSearch(String query) {
-    _searchController.text = query;
-    st.appState.searchQuery = query;
-    st.appState.performSearch(query);
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
+    _searchController.text = trimmed;
+    st.appState.performSearch(trimmed);
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    st.appState.clearSearch();
+    setState(() {});
   }
 
   @override
@@ -52,8 +70,10 @@ class _HomePageState extends State<HomePage> {
       builder: (context, _) {
         final state = st.appState;
         final isDark = state.themeMode == ThemeMode.dark;
-        final query = state.lastSearched ?? state.searchQuery;
-        final ranked = st.rankResults(state.searchResults, query);
+        final query = state.lastSearched ?? '';
+        final ranked = query.isNotEmpty
+            ? st.rankResults(state.searchResults, query)
+            : <DictItem>[];
         final List<DictItem> displayResults;
         if (state.activeFilters.contains('Ambos')) {
           displayResults = ranked
@@ -64,13 +84,6 @@ class _HomePageState extends State<HomePage> {
               .where((item) => state.activeFilters.contains(item.source))
               .toList();
         }
-
-        final suggestions =
-            state.searchQuery.isNotEmpty &&
-                state.searchQuery != state.lastSearched &&
-                !state.isSearching
-            ? st.suggestionsFor(state.searchQuery, 6)
-            : const <String>[];
 
         return Scaffold(
           resizeToAvoidBottomInset: false,
@@ -116,32 +129,31 @@ class _HomePageState extends State<HomePage> {
                         decoration: InputDecoration(
                           labelText: s.searchLabel,
                           border: const OutlineInputBorder(),
-                          suffixIcon: state.searchQuery.isNotEmpty
+                          suffixIcon: _searchController.text.isNotEmpty
                               ? IconButton(
                                   icon: const Icon(Icons.clear, size: 20),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    state.searchQuery = '';
-                                  },
+                                  onPressed: _clearSearch,
                                 )
                               : null,
                         ),
                         textInputAction: TextInputAction.search,
-                        onChanged: (value) => state.searchQuery = value,
-                        onSubmitted: state.performSearch,
+                        onChanged: (value) {
+                          state.searchQuery = value;
+                          if (value.trim().isEmpty && state.lastSearched != null) {
+                            state.clearSearch();
+                          }
+                        },
+                        onSubmitted: _runSearch,
                       ),
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton(
-                      onPressed: () => state.performSearch(state.searchQuery),
+                      onPressed: () => _runSearch(_searchController.text),
                       child: const Text(s.searchButton),
                     ),
                   ],
                 ),
               ),
-              if (suggestions.isNotEmpty)
-                _SuggestionList(
-                    suggestions: suggestions, onSelected: _runSearch),
               _FilterChips(
                 activeFilters: state.activeFilters,
                 enabledSources: state.enabledSources,
@@ -179,7 +191,7 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () => state.performSearch(state.searchQuery),
+                onPressed: () => state.performSearch(state.lastSearched ?? state.searchQuery),
                 child: const Text(s.tryAgain),
               ),
             ],
@@ -188,8 +200,8 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    if (displayResults.isEmpty && !state.isSearching) {
-      final blank = state.searchQuery.trim().isEmpty;
+    final searched = state.lastSearched;
+    if (searched == null) {
       return Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(32),
@@ -198,13 +210,13 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Icon(
-                blank ? Icons.search : Icons.search_off,
+                Icons.search,
                 size: 64,
                 color: Colors.grey.shade400,
               ),
               const SizedBox(height: 16),
               Text(
-                blank ? s.typeToSearch : s.noResultsFor(state.searchQuery),
+                s.typeToSearch,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -212,12 +224,12 @@ class _HomePageState extends State<HomePage> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              if (!blank && state.showYoutubeButton)
-                _YoutubeCard(query: state.searchQuery),
-              if (blank && state.recentSearches.isNotEmpty)
+              if (state.recentSearches.isNotEmpty)
                 _RecentSearchesBlock(
                   recents: state.recentSearches,
                   onSelected: _runSearch,
+                  onDelete: state.removeRecentSearch,
+                  onClearAll: state.clearRecentSearches,
                 ),
             ],
           ),
@@ -225,11 +237,68 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
+    if (displayResults.isEmpty && !state.isSearching) {
+      return Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.search_off,
+                size: 64,
+                color: Colors.grey.shade400,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                s.noResultsFor(searched),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              if (state.showYoutubeButton)
+                _YoutubeCard(query: searched),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final disambiguations = _computeDisambiguations(displayResults);
+
     return ListView.builder(
       itemCount: displayResults.length,
-      itemBuilder: (context, index) =>
-          DictionaryItemCard(item: displayResults[index]),
+      itemBuilder: (context, index) => DictionaryItemCard(
+        item: displayResults[index],
+        disambiguation: disambiguations[index],
+      ),
     );
+  }
+
+  Map<int, DisambiguationInfo> _computeDisambiguations(List<DictItem> items) {
+    final counts = <String, int>{};
+    for (final item in items) {
+      final key = '${item.source?.toUpperCase()}_${item.title?.toUpperCase()}';
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+
+    final currentIndices = <String, int>{};
+    final result = <int, DisambiguationInfo>{};
+    for (var i = 0; i < items.length; i++) {
+      final item = items[i];
+      final key = '${item.source?.toUpperCase()}_${item.title?.toUpperCase()}';
+      final total = counts[key] ?? 1;
+      if (total > 1) {
+        final cur = (currentIndices[key] ?? 0) + 1;
+        currentIndices[key] = cur;
+        result[i] = DisambiguationInfo(index: cur, total: total);
+      }
+    }
+    return result;
   }
 }
 
@@ -332,36 +401,18 @@ class _FailedSourcesBanner extends StatelessWidget {
   }
 }
 
-class _SuggestionList extends StatelessWidget {
-  const _SuggestionList({required this.suggestions, required this.onSelected});
-
-  final List<String> suggestions;
-  final ValueChanged<String> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 4,
-        children: [
-          for (final word in suggestions)
-            ActionChip(
-              label: Text(word, style: const TextStyle(fontSize: 13)),
-              onPressed: () => onSelected(word),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
 class _RecentSearchesBlock extends StatelessWidget {
-  const _RecentSearchesBlock({required this.recents, required this.onSelected});
+  const _RecentSearchesBlock({
+    required this.recents,
+    required this.onSelected,
+    required this.onDelete,
+    required this.onClearAll,
+  });
 
   final List<String> recents;
   final ValueChanged<String> onSelected;
+  final ValueChanged<String> onDelete;
+  final VoidCallback onClearAll;
 
   @override
   Widget build(BuildContext context) {
@@ -370,13 +421,34 @@ class _RecentSearchesBlock extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 24, bottom: 8),
-          child: Text(
-            s.recentSearches,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                s.recentSearches,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: onClearAll,
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                child: Text(
+                  s.clearHistory,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.red.shade400,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         Wrap(
@@ -385,10 +457,14 @@ class _RecentSearchesBlock extends StatelessWidget {
           alignment: WrapAlignment.center,
           children: [
             for (final query in recents)
-              ActionChip(
+              InputChip(
                 avatar: const Icon(Icons.history, size: 16),
                 label: Text(query, style: const TextStyle(fontSize: 13)),
                 onPressed: () => onSelected(query),
+                onDeleted: () => onDelete(query),
+                deleteIcon: const Icon(Icons.close, size: 16),
+                deleteButtonTooltipMessage: 'Remover $query',
+                deleteIconColor: Colors.grey.shade500,
               ),
           ],
         ),

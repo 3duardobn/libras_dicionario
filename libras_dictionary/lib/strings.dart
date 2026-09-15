@@ -26,11 +26,15 @@ String searchYoutubeFor(String query) => 'Buscar "$query" no YouTube';
 const notFoundDictionaries = 'Não encontrado nos dicionários.';
 const typeToSearch = 'Digite uma palavra acima para pesquisar';
 String noResultsFor(String query) => 'Nenhum resultado encontrado para "$query"';
+String resultsCount(int count, String query) =>
+    '$count ${count == 1 ? 'sinal encontrado' : 'sinais encontrados'} para "$query"';
 const tryAgain = 'Tentar novamente';
 const searchError =
     'Não foi possível completar a busca. Verifique sua conexão e tente novamente.';
 String sourcesUnavailable(String names) => 'Fontes indisponíveis: $names';
 const recentSearches = 'Buscas recentes';
+const clearHistory = 'Limpar histórico';
+String variationBadge(int index, int total) => 'Sinal $index de $total';
 const favoritesTitle = 'Favoritos';
 const favoritesEmpty =
     'Nenhum favorito ainda. Toque na estrela de um sinal para salvá-lo.';

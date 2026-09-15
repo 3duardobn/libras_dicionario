@@ -197,7 +197,12 @@ class _ChewiePlayerState extends State<_ChewiePlayer> {
       final uri = Uri.parse(widget.videoUrl);
       final ts = DateTime.now().millisecondsSinceEpoch.toString();
       final queryParams = {...uri.queryParameters, 'v': ts};
-      final finalUri = uri.replace(queryParameters: queryParams);
+      final effectiveScheme =
+          uri.host == 'dicionario.ines.gov.br' ? 'http' : uri.scheme;
+      final finalUri = uri.replace(
+        scheme: effectiveScheme,
+        queryParameters: queryParams,
+      );
       final vc = VideoPlayerController.networkUrl(
         finalUri,
         httpHeaders: const {'User-Agent': 'Mozilla/5.0', 'Accept': '*/*'},
