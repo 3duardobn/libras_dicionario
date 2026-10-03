@@ -1,8 +1,10 @@
 # Product
 
-## Register
+<!-- impeccable:product-schema 1 -->
 
-product
+## Platform
+
+android
 
 ## Users
 
@@ -12,18 +14,35 @@ Primary: Eduardo and other Portuguese speakers learning Libras as a second langu
 
 A mobile dictionary that searches multiple Libras sign sources simultaneously and surfaces videos, descriptions, and links in one place. Exists because no single source covers everything; the app aggregates INES, RedeSurdos, UFV, LibrasAcademicaUFF, SpreadTheSign, and YouTube into a unified search. Success means finding the sign you need, fast, without opening five browser tabs.
 
-## Brand Personality
+## Positioning
 
-Warm, accessible, community. Not a product with a brand strategy; an honest tool made by a learner for learners and the broader Deaf community. Voice is direct and unpretentious. Tone is supportive without being patronizing.
+An honest aggregation layer over the institutional sources: every result is one tap from the video, cross-checked across sources, and the tool itself does not pretend to be an institution. No single source covers all signs; the app's mechanism is simultaneous multi-source search with word matching, source filters, autocomplete from the INES vocabulary (~5.800 words), and a cached INES vocabulary for partial offline use.
 
-## Anti-references
+## Operating Context
 
-- Cold government portals: sterile, bureaucratic, information-dense without visual hierarchy (INES's own site is the canonical example)
-- Generic SaaS dashboards: blue-purple gradients, hero metrics, identical card grids, performative polish
-- Medical or clinical apps: over-sanitized white spaces, clinical typography, zero warmth
-- Heavy gamification: streaks, badges, Duolingo-style pressure mechanics
+Mobile-first, used in quick bursts while studying or in a real conversation context. Touch-driven; users may be holding the phone in one hand. Videos play inline; only one plays at a time. The app must still work when individual sources fail — failed sources must not take down the search.
 
-## Design Principles
+## Capabilities and Constraints
+
+- Multi-source simultaneous search with whole-word matching and per-source filters (INES, RedeSurdos, UFV, Libras Acadêmica UFF, SpreadTheSign, YouTube).
+- Native mp4 playback or the official embedded YouTube player; one video at a time.
+- Autocomplete from the INES vocabulary (~5.800 words).
+- Favorites and recent searches persisted on device; optional offline caching of the INES vocabulary.
+- Light/dark theme, sign sharing, optional YouTube search button.
+- Flutter with pure Dart; GPL-3.0-only; Android application id `dev.edbn.libras_dictionary` (version 1.0.6+5).
+
+## Brand Commitments
+
+Name "Dicionário Libras" (Libras Dictionary). Warm, accessible, community voice; direct and unpretentious, supportive without being patronizing. The user confirms the color palette and overall visual direction have changed and no longer match the incumbent DESIGN.md — the visual world is to be renewed.
+
+## Evidence on Hand
+
+- README.md documents features, sources, and the app structure.
+- DESIGN.md (incumbent visual record, outdated per confirmed change) and `.impeccable/design.json` describe the current blue palette (`#1565C0` family) and per-source identity colors.
+- `libras_dictionary/lib/theme.dart` contains the implemented color tokens.
+- No invented testimonials, benchmarks, or press; none should be fabricated.
+
+## Product Principles
 
 1. **Content before chrome.** The sign video or image is the product. Every UI element exists to surface it faster or understand it better. Nothing decorates.
 2. **Visual-first, no audio dependency.** Primary users may be Deaf or HoH. No affordances rely on sound. Status, feedback, and state are always communicated visually.
