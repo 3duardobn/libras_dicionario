@@ -91,7 +91,7 @@ class _HomePageState extends State<HomePage> {
             title: const Text(s.appTitle),
             actions: [
               IconButton(
-                icon: const Icon(Icons.star),
+                icon: const Icon(Icons.folder_outlined),
                 tooltip: s.favoritesTitle,
                 onPressed: () {
                   Navigator.push(
@@ -282,7 +282,6 @@ class _HomePageState extends State<HomePage> {
       itemBuilder: (context, index) => DictionaryItemCard(
         item: displayResults[index],
         disambiguation: disambiguations[index],
-        folio: index + 1,
       ),
     );
   }
@@ -365,7 +364,7 @@ class _YoutubeCard extends StatelessWidget {
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.sourceYoutube,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.onColor(AppColors.sourceYoutube),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.input),
@@ -497,37 +496,28 @@ class _FilterChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sortedSources = enabledSources.toList()..sort();
-    return Container(
+    return SizedBox(
       height: 48,
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).colorScheme.outline,
-            width: 1,
-          ),
-        ),
-      ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            _SteppedTab(
+            _SourceChip(
               source: 'Ambos',
               label: s.filterAll,
               isSelected: activeFilters.contains('Ambos'),
               isDark: isDark,
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 8),
             for (final source in sortedSources) ...[
-              _SteppedTab(
+              _SourceChip(
                 source: source,
                 label: sourceLabel(source),
                 isSelected: activeFilters.contains(source),
                 isDark: isDark,
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 8),
             ],
           ],
         ),
@@ -536,11 +526,10 @@ class _FilterChips extends StatelessWidget {
   }
 }
 
-/// One tab on the source rail. The active tab is the extended divider board
-/// (full colour, taller); the others are recessed leaves. Height is the
-/// fold, not a colour — so the selection reads even in High Contrast.
-class _SteppedTab extends StatelessWidget {
-  const _SteppedTab({
+/// Chip limpo de fonte: cor pastel suave quando ativo, neutro quando não.
+/// A cor pastel só preenche a área do próprio chip, nunca a interface.
+class _SourceChip extends StatelessWidget {
+  const _SourceChip({
     required this.source,
     required this.label,
     required this.isSelected,
@@ -556,72 +545,57 @@ class _SteppedTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isHighContrast = st.appState.isHighContrast;
-    final board = source == 'Ambos'
-        ? scheme.primary
-        : AppColors.forSource(source);
-    final recessedBg =
-        isDark ? const Color(0xFF2A2620) : const Color(0xFFE9E2D6);
-    final recessedFg = isDark ? Colors.white70 : scheme.onSurfaceVariant;
-    final height = isSelected ? 56.0 : 34.0;
 
-    return GestureDetector(
-      onTap: () {
-        st.appState.onFilterChanged(source, !isSelected);
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 90),
-        curve: Curves.linear,
-        height: height,
-        constraints: BoxConstraints(minWidth: isSelected ? 96 : 72),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isSelected ? board : recessedBg,
-          border: isHighContrast
-              ? Border.all(color: scheme.outline, width: 2)
-              : null,
+    // Cor de fundo quando selecionado. "Todos" usa a cor primária do tema
+    // (sólida, com contraste garantido em todos os temas); as fontes usam
+    // a cor pastel correspondente.
+    final selectedBg = source == 'Ambos'
+        ? scheme.primary
+        : (isHighContrast ? scheme.primary : AppColors.forSource(source));
+    final selectedFg = source == 'Ambos'
+        ? scheme.onPrimary
+        : (isHighContrast
+            ? scheme.onPrimary
+            : AppColors.onColor(selectedBg));
+
+    final border = BorderSide(
+      color: isHighContrast
+          ? scheme.outline
+          : (isSelected ? selectedBg : scheme.outline),
+      width: isHighContrast ? 2 : 1,
+    );
+
+    return Material(
+      color: isSelected ? selectedBg : scheme.surfaceContainerHighest,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.chip),
+        side: border,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () {
+          st.appState.onFilterChanged(source, !isSelected);
+        },
+        child: Container(
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: isHighContrast ? 15 : 13,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected
+                  ? selectedFg
+                  : (isHighContrast
+                      ? scheme.onSurface
+                      : scheme.onSurfaceVariant),
+            ),
+          ),
         ),
-        child: isSelected
-            ? FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      label.toUpperCase(),
-                      maxLines: 1,
-                      style: TextStyle(
-                        fontSize: isHighContrast ? 14 : 12,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.3,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      (source == 'Ambos' ? 'TODOS' : source).toUpperCase(),
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 8,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white.withValues(alpha: 0.85),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            : Text(
-                label.toUpperCase(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: isHighContrast ? 14 : 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.3,
-                  color: recessedFg,
-                ),
-              ),
       ),
     );
   }

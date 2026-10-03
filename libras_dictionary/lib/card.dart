@@ -16,6 +16,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 
+import 'folder_ui.dart';
 import 'models.dart';
 import 'player.dart';
 import 'state.dart' as st;
@@ -55,47 +56,27 @@ Widget _htmlSection(String label, String data, bool italic) {
   );
 }
 
-/// Source code in the manual's machine voice: monospace, one size, weight
-/// and case do the ranking.
-class SourceCode extends StatelessWidget {
-  const SourceCode(this.label, {super.key, this.color});
-
-  final String label;
-  final Color? color;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Text(
-      label,
-      style: TextStyle(
-        fontFamily: 'monospace',
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.5,
-        color: color ?? theme.colorScheme.onSurfaceVariant,
-      ),
-    );
-  }
-}
-
-/// Result leaf for one dictionary entry: a full-strength source divider
-/// board at the head and a milky acetate leaf for the opened body. State
-/// is carried by marks (the punch hole of the favourite star, the errata
-/// slip of an error), never by colour alone.
+/// Card de resultado em lista limpa: título grande, faixa lateral fina na
+/// cor pastel da fonte como única marca colorida, e o corpo em uma folha
+/// neutra ao expandir. Sem faixas full-bleed e sem códigos mono.
 class DictionaryItemCard extends StatefulWidget {
   const DictionaryItemCard({
     super.key,
     required this.item,
     this.disambiguation,
-    this.folio,
+    this.folderId,
+    this.onRemoveFromFolder,
+    this.onMoveToFolder,
   });
 
   final DictItem item;
   final DisambiguationInfo? disambiguation;
 
-  /// Position in the result list, printed in mono like a catalogue entry.
-  final int? folio;
+  /// Quando definido, o card aparece dentro de uma pasta e as ações
+  /// passam a ser remover/mover em vez de salvar.
+  final String? folderId;
+  final VoidCallback? onRemoveFromFolder;
+  final VoidCallback? onMoveToFolder;
 
   @override
   State<DictionaryItemCard> createState() => _DictionaryItemCardState();
@@ -107,7 +88,7 @@ class _DictionaryItemCardState extends State<DictionaryItemCard> {
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
-    final isFavorite = st.appState.isFavorite(item);
+    final isSaved = widget.folderId != null || st.appState.isSaved(item);
     final description = item.description;
     final exemplo = item.exemplo;
     final libras = item.libras;
@@ -118,244 +99,262 @@ class _DictionaryItemCardState extends State<DictionaryItemCard> {
     final scheme = Theme.of(context).colorScheme;
     final isHighContrast = st.appState.isHighContrast;
 
-    final dividerHeight = isHighContrast ? 56.0 : 48.0;
+    final sourceName = item.source ?? '';
+    final inFolder = widget.folderId != null;
 
     return Semantics(
-      label: '${item.title}, ${item.source}',
+      label: '${item.title}, $sourceName',
       hint: _expanded ? s.collapseHint : s.expandHint,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          border: Border.all(
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        elevation: 0,
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          side: BorderSide(
             color: isHighContrast ? scheme.outline : Colors.transparent,
             width: isHighContrast ? 2 : 0,
           ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            InkWell(
-              onTap: () => setState(() => _expanded = !_expanded),
-              child: Container(
-                height: dividerHeight,
-                color: sourceColor,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                child: Row(
-                  children: [
-                    if (widget.folio != null) ...[
-                      SourceCode(
-                        widget.folio.toString().padLeft(2, '0'),
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                      const SizedBox(width: 10),
-                    ],
-                    Expanded(
-                      child: Text(
-                        item.title ?? '',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontWeight:
-                              isHighContrast ? FontWeight.w900 : FontWeight.w800,
-                          fontSize: isHighContrast ? 20 : 17,
-                          color: Colors.white,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    SourceCode(
-                      (item.source ?? '').toUpperCase(),
-                      color: Colors.white.withValues(alpha: 0.85),
-                    ),
-                    if (widget.disambiguation != null)
-                      Container(
-                        margin: const EdgeInsets.only(left: 6),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.22),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          s.variationBadge(
-                            widget.disambiguation!.index,
-                            widget.disambiguation!.total,
-                          ),
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    IconButton(
-                      icon: Icon(
-                        isFavorite ? Icons.star : Icons.star_border,
-                        color: Colors.white,
-                      ),
-                      tooltip: isFavorite ? s.favoriteRemove : s.favoriteAdd,
-                      onPressed: () => st.appState.toggleFavorite(item),
-                    ),
-                    if (item.link != null)
-                      IconButton(
-                        icon: const Icon(Icons.share, color: Colors.white),
-                        tooltip: s.shareSign,
-                        onPressed: () => st.appState.shareItem(item),
-                      ),
-                    Icon(
-                      _expanded ? Icons.expand_less : Icons.expand_more,
-                      color: Colors.white,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            if (!_expanded &&
-                description != null &&
-                description.trim().isNotEmpty)
-              Container(
-                color: scheme.surface,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      margin: const EdgeInsets.only(top: 5, right: 10),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: scheme.onSurfaceVariant,
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        description
-                            .replaceAll(RegExp(r'<[^>]*>'), '')
-                            .trim(),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontStyle: FontStyle.italic,
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            if (_expanded)
-              Container(
-                color: isHighContrast
-                    ? scheme.surface
-                    : Color.alphaBlend(
-                        sourceColor.withValues(alpha: 0.08),
-                        scheme.surface,
-                      ),
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (description != null && description.trim().isNotEmpty)
-                      _htmlSection(s.descriptionLabel, description, false),
-                    if (exemplo != null && exemplo.trim().isNotEmpty)
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Faixa lateral fina na cor pastel da fonte.
+                Container(width: 4, color: sourceColor),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                       Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child:
-                            _htmlSection(s.exampleLabel, exemplo, true),
-                      ),
-                    if (libras != null && libras.trim().isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Column(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 8, 4),
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              s.glosaLabel,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                            Expanded(
+                              child: Wrap(
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: 8,
+                                runSpacing: 4,
+                                children: [
+                                  Text(
+                                    item.title ?? '',
+                                    style: TextStyle(
+                                      fontSize: isHighContrast ? 22 : 18,
+                                      fontWeight: isHighContrast
+                                          ? FontWeight.w900
+                                          : FontWeight.w700,
+                                      color: scheme.onSurface,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                  if (widget.disambiguation != null)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: scheme.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        s.variationBadge(
+                                          widget.disambiguation!.index,
+                                          widget.disambiguation!.total,
+                                        ),
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: scheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: scheme.surfaceContainerHighest,
-                                border: Border.all(
-                                  color: scheme.outline,
-                                  width: isHighContrast ? 2 : 1,
+                            if (inFolder) ...[
+                              if (widget.onMoveToFolder != null)
+                                IconButton(
+                                  icon: const Icon(Icons.drive_file_move_outline),
+                                  tooltip: s.moveToFolder,
+                                  color: scheme.onSurfaceVariant,
+                                  onPressed: widget.onMoveToFolder,
                                 ),
+                              IconButton(
+                                icon: const Icon(Icons.folder_off_outlined),
+                                tooltip: s.favoriteRemove,
+                                color: scheme.onSurfaceVariant,
+                                onPressed: widget.onRemoveFromFolder,
                               ),
-                              child: Text(
-                                libras,
-                                style: TextStyle(
-                                  fontFamily: 'monospace',
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: scheme.onSurface,
+                            ] else
+                              IconButton(
+                                icon: Icon(
+                                  isSaved
+                                      ? Icons.folder
+                                      : Icons.folder_outlined,
+                                  color: isSaved
+                                      ? sourceColor
+                                      : scheme.onSurfaceVariant,
                                 ),
+                                tooltip: s.favoriteAdd,
+                                onPressed: () =>
+                                    showSaveToFolderSheet(context, item),
                               ),
+                            Icon(
+                              _expanded
+                                  ? Icons.expand_less
+                                  : Icons.expand_more,
+                              color: scheme.onSurfaceVariant,
                             ),
-                            const SizedBox(height: 12),
                           ],
                         ),
                       ),
-                    if (youtubeId != null && youtubeId.trim().isNotEmpty)
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: YoutubePlayerWidget(youtubeId: youtubeId),
-                      ),
-                    if (imageUrl != null && imageUrl.trim().isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(0, 8, 0, 12),
-                        child: Image.network(
-                          imageUrl.startsWith('https://dicionario.ines.gov.br')
-                              ? imageUrl.replaceFirst('https://', 'http://')
-                              : imageUrl,
-                          fit: BoxFit.contain,
-                          loadingBuilder: (context, child, progress) =>
-                              progress == null
-                                  ? child
-                                  : const Padding(
-                                      padding: EdgeInsets.all(24),
-                                      child: Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                    ),
-                          errorBuilder: (context, error, stackTrace) =>
-                              const _ErrataSlip(message: s.imageError),
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                        child: Text(
+                          sourceName,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: scheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
-                    if (videoUrl != null && videoUrl.trim().isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: ChewieVideoWidget(videoUrl: videoUrl),
-                      ),
-                  ],
+                      if (!_expanded &&
+                          description != null &&
+                          description.trim().isNotEmpty)
+                        Padding(
+                          padding:
+                              const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                          child: Text(
+                            description
+                                .replaceAll(RegExp(r'<[^>]*>'), '')
+                                .trim(),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontStyle: FontStyle.italic,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      if (_expanded)
+                        Container(
+                          color: scheme.surface,
+                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (description != null &&
+                                  description.trim().isNotEmpty)
+                                _htmlSection(
+                                    s.descriptionLabel, description, false),
+                              if (exemplo != null && exemplo.trim().isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: _htmlSection(
+                                      s.exampleLabel, exemplo, true),
+                                ),
+                              if (libras != null &&
+                                  libras.trim().isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        s.glosaLabel,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color:
+                                              scheme.surfaceContainerHighest,
+                                          borderRadius: BorderRadius.circular(
+                                              AppRadius.chip),
+                                        ),
+                                        child: Text(
+                                          libras,
+                                          style: TextStyle(
+                                            fontFamily: 'monospace',
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: scheme.onSurface,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                    ],
+                                  ),
+                                ),
+                              if (youtubeId != null &&
+                                  youtubeId.trim().isNotEmpty)
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                  child: YoutubePlayerWidget(youtubeId: youtubeId),
+                                ),
+                              if (imageUrl != null &&
+                                  imageUrl.trim().isNotEmpty)
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(0, 8, 0, 12),
+                                  child: Image.network(
+                                    imageUrl.startsWith(
+                                            'https://dicionario.ines.gov.br')
+                                        ? imageUrl.replaceFirst(
+                                            'https://', 'http://')
+                                        : imageUrl,
+                                    fit: BoxFit.contain,
+                                    loadingBuilder: (context, child, progress) =>
+                                        progress == null
+                                            ? child
+                                            : const Padding(
+                                                padding: EdgeInsets.all(24),
+                                                child: Center(
+                                                  child:
+                                                      CircularProgressIndicator(),
+                                                ),
+                                              ),
+                                    errorBuilder: (context, error, stackTrace) =>
+                                        _ErrataSlip(message: s.imageError),
+                                  ),
+                                ),
+                              if (videoUrl != null &&
+                                  videoUrl.trim().isNotEmpty)
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                  child: ChewieVideoWidget(videoUrl: videoUrl),
+                                ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-/// Vermilion errata slip: the error mark of the manual, in every theme.
+/// Marca de erro discreta: texto com ícone na cor de erro do tema.
 class _ErrataSlip extends StatelessWidget {
   const _ErrataSlip({required this.message});
 
@@ -363,23 +362,20 @@ class _ErrataSlip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        border: Border.all(color: AppColors.errata, width: 2),
-      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: AppColors.errata, size: 20),
+          Icon(Icons.error_outline, color: scheme.error, size: 20),
           const SizedBox(width: 8),
           Flexible(
             child: Text(
               message,
-              style: const TextStyle(
-                color: AppColors.errata,
-                fontWeight: FontWeight.w700,
+              style: TextStyle(
+                color: scheme.error,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),

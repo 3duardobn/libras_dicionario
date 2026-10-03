@@ -101,7 +101,7 @@ class AppState extends ChangeNotifier {
   List<String> _failedSources = [];
   String? _errorMessage;
   List<String> _recentSearches = [];
-  List<DictItem> _favorites = [];
+  List<Folder> _folders = [];
   Set<String> _enabledSources = allSources;
   Set<String> _activeFilters = {'Ambos'};
   bool _isShareMinimal = false;
@@ -117,7 +117,7 @@ class AppState extends ChangeNotifier {
   List<String> get failedSources => _failedSources;
   String? get errorMessage => _errorMessage;
   List<String> get recentSearches => _recentSearches;
-  List<DictItem> get favorites => _favorites;
+  List<Folder> get folders => _folders;
   Set<String> get enabledSources => _enabledSources;
   Set<String> get activeFilters => _activeFilters;
   bool get isShareMinimal => _isShareMinimal;
@@ -138,7 +138,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- Favorites ---
+  // --- Folders ---
 
   String _itemToJson(DictItem item) => json.encode({
         'title': item.title,
@@ -172,24 +172,139 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  bool isFavorite(DictItem item) {
-    final key = favoriteKey(item);
-    return _favorites.any((f) => favoriteKey(f) == key);
+  String _folderToJson(Folder folder) => json.encode({
+        'id': folder.id,
+        'name': folder.name,
+        'color': folder.colorValue,
+        'items': folder.items.map(_itemToJson).toList(),
+      });
+
+  Folder? _jsonToFolder(String encoded) {
+    try {
+      final data = json.decode(encoded) as Map<String, dynamic>;
+      final rawItems = (data['items'] as List? ?? [])
+          .map((e) => _jsonToItem(e as String))
+          .whereType<DictItem>()
+          .toList();
+      return Folder(
+        id: data['id'] as String,
+        name: data['name'] as String,
+        colorValue: (data['color'] as num?)?.toInt() ?? 0xFFE57373,
+        items: rawItems,
+      );
+    } catch (e) {
+      api.log(['Could not decode folder:', e]);
+      return null;
+    }
   }
 
-  void toggleFavorite(DictItem item) {
+  Folder? folderById(String id) {
+    for (final folder in _folders) {
+      if (folder.id == id) return folder;
+    }
+    return null;
+  }
+
+  /// Pastas que contêm este sinal.
+  List<Folder> foldersContaining(DictItem item) {
     final key = favoriteKey(item);
-    final updated = isFavorite(item)
-        ? _favorites.where((f) => favoriteKey(f) != key).toList()
-        : [..._favorites, item];
-    _favorites = updated;
+    return _folders
+        .where((f) => f.items.any((i) => favoriteKey(i) == key))
+        .toList();
+  }
+
+  bool isSaved(DictItem item) => foldersContaining(item).isNotEmpty;
+
+  Future<String> createFolder(String name, int colorValue) async {
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    final folder = Folder(id: id, name: name, colorValue: colorValue);
+    _folders = [..._folders, folder];
     notifyListeners();
-    unawaited(_persistFavorites(updated));
+    await _persistFolders();
+    return id;
   }
 
-  Future<void> _persistFavorites(List<DictItem> favorites) async {
+  void renameFolder(String id, String name) {
+    _folders = [
+      for (final folder in _folders)
+        if (folder.id == id) Folder(
+              id: folder.id,
+              name: name,
+              colorValue: folder.colorValue,
+              items: folder.items,
+            )
+        else
+          folder,
+    ];
+    notifyListeners();
+    unawaited(_persistFolders());
+  }
+
+  void setFolderColor(String id, int colorValue) {
+    _folders = [
+      for (final folder in _folders)
+        if (folder.id == id) Folder(
+              id: folder.id,
+              name: folder.name,
+              colorValue: colorValue,
+              items: folder.items,
+            )
+        else
+          folder,
+    ];
+    notifyListeners();
+    unawaited(_persistFolders());
+  }
+
+  void deleteFolder(String id) {
+    _folders = _folders.where((f) => f.id != id).toList();
+    notifyListeners();
+    unawaited(_persistFolders());
+  }
+
+  /// Salva um sinal na pasta. Se já existe lá, é ignorado.
+  Future<void> addToFolder(String id, DictItem item) async {
+    final key = favoriteKey(item);
+    _folders = [
+      for (final folder in _folders)
+        if (folder.id == id && !folder.items.any((i) => favoriteKey(i) == key))
+          Folder(
+            id: folder.id,
+            name: folder.name,
+            colorValue: folder.colorValue,
+            items: [...folder.items, item],
+          )
+        else
+          folder,
+    ];
+    notifyListeners();
+    await _persistFolders();
+  }
+
+  /// Remove o sinal de todas as pastas onde ele aparece.
+  Future<void> removeFromAllFolders(DictItem item) async {
+    final key = favoriteKey(item);
+    _folders = [
+      for (final folder in _folders)
+        if (folder.items.any((i) => favoriteKey(i) == key))
+          Folder(
+            id: folder.id,
+            name: folder.name,
+            colorValue: folder.colorValue,
+            items: folder.items
+                .where((i) => favoriteKey(i) != key)
+                .toList(),
+          )
+        else
+          folder,
+    ];
+    notifyListeners();
+    await _persistFolders();
+  }
+
+  Future<void> _persistFolders() async {
     final p = await SharedPreferences.getInstance();
-    await p.setStringList('favorites', favorites.map(_itemToJson).toList());
+    await p.setStringList('folders', _folders.map(_folderToJson).toList());
   }
 
   // --- Recent searches ---
@@ -237,7 +352,7 @@ class AppState extends ChangeNotifier {
     _failedSources = [];
     _errorMessage = null;
     _recentSearches = [];
-    _favorites = [];
+    _folders = [];
     _enabledSources = allSources;
     _activeFilters = {'Ambos'};
     _isShareMinimal = false;
@@ -252,7 +367,7 @@ class AppState extends ChangeNotifier {
     final shareMin = p.getBool('is_share_minimal') ?? false;
     final showYt = p.getBool('show_youtube_button');
     final recents = p.getStringList('recent_searches') ?? [];
-    final favorites = p.getStringList('favorites') ?? [];
+    final storedFolders = p.getStringList('folders') ?? [];
 
     _themeMode = AppThemeMode.values
             .firstWhere((m) => m.name == themeName,
@@ -266,7 +381,25 @@ class AppState extends ChangeNotifier {
     _isShareMinimal = shareMin;
     _showYoutubeButton = showYt ?? true;
     _recentSearches = recents;
-    _favorites = favorites.map(_jsonToItem).whereType<DictItem>().toList();
+    _folders = storedFolders.map(_jsonToFolder).whereType<Folder>().toList();
+    // Migra favoritos antigos (chave 'favorites') para uma pasta padrão.
+    if (_folders.isEmpty) {
+      final legacyFavorites = p.getStringList('favorites') ?? [];
+      final legacyItems =
+          legacyFavorites.map(_jsonToItem).whereType<DictItem>().toList();
+      if (legacyItems.isNotEmpty) {
+        _folders = [
+          Folder(
+            id: 'legacy-favorites',
+            name: s.favoritesDefaultFolder,
+            colorValue: 0xFFE57373,
+            items: legacyItems,
+          ),
+        ];
+        await p.remove('favorites');
+        await _persistFolders();
+      }
+    }
     _activeFilters = {'Ambos'};
     notifyListeners();
   }

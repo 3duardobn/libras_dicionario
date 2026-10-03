@@ -71,3 +71,19 @@ Map<int, DisambiguationInfo> computeDisambiguations(List<DictItem> items) {
   }
   return result;
 }
+
+/// Pasta de sinais salvos. O nome pode ter várias palavras e a pasta tem
+/// uma cor própria escolhida pelo usuário.
+class Folder {
+  Folder({
+    required this.id,
+    required this.name,
+    required this.colorValue,
+    List<DictItem>? items,
+  }) : items = items ?? [];
+
+  final String id;
+  String name;
+  int colorValue;
+  final List<DictItem> items;
+}

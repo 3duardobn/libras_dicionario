@@ -101,7 +101,7 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ],
                     border: Border.all(
-                      color: scheme.outline,
+                      color: scheme.primary,
                       width: 2,
                     ),
                   ),
@@ -110,8 +110,8 @@ class _SplashScreenState extends State<SplashScreen>
                     width: 120,
                     height: 120,
                     fit: BoxFit.contain,
-                    colorFilter: const ColorFilter.mode(
-                      Colors.white,
+                    colorFilter: ColorFilter.mode(
+                      scheme.onPrimary,
                       BlendMode.srcIn,
                     ),
                   ),
