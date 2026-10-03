@@ -53,6 +53,12 @@ const descriptionLabel = 'Descrição:';
 const exampleLabel = 'Exemplo:';
 const glosaLabel = 'Tradução Libras (Glosa):';
 const settingsTitle = 'Configurações';
+const settingsThemeSection = 'Tema';
+const themeLight = 'Claro';
+const themeDark = 'Escuro';
+const themeHighContrast = 'Alto Contraste';
+const themeHighContrastSub =
+    'Preto e branco puros, traços mais grossos e estado por marcas, para facilitar a leitura.';
 const settingsSearchSection = 'Configurações de Busca';
 const settingsYoutubeButton = 'Botão de busca no YouTube';
 const settingsYoutubeButtonSub =

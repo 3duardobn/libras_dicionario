@@ -29,6 +29,7 @@ import 'platform/share_stub.dart'
     if (dart.library.js_interop) 'platform/share_web.dart'
     if (dart.library.io) 'platform/share_mobile.dart';
 import 'strings.dart' as s;
+import 'theme.dart';
 
 const mobileSources = {
   'INES',
@@ -91,7 +92,7 @@ void releasePlayback(Object id) {
 }
 
 class AppState extends ChangeNotifier {
-  ThemeMode _themeMode = ThemeMode.light;
+  AppThemeMode _themeMode = AppThemeMode.light;
   String _searchQuery = '';
   String? _lastSearched;
   int _searchToken = 0;
@@ -106,7 +107,9 @@ class AppState extends ChangeNotifier {
   bool _isShareMinimal = false;
   bool _showYoutubeButton = true;
 
-  ThemeMode get themeMode => _themeMode;
+  AppThemeMode get appThemeMode => _themeMode;
+  bool get isDark => _themeMode == AppThemeMode.dark;
+  bool get isHighContrast => _themeMode == AppThemeMode.highContrast;
   String get searchQuery => _searchQuery;
   String? get lastSearched => _lastSearched;
   bool get isSearching => _isSearching;
@@ -225,7 +228,7 @@ class AppState extends ChangeNotifier {
   /// survives across tests in the same process).
   @visibleForTesting
   void resetForTest() {
-    _themeMode = ThemeMode.light;
+    _themeMode = AppThemeMode.light;
     _searchQuery = '';
     _lastSearched = null;
     _searchToken++;
@@ -243,6 +246,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> loadSettings() async {    final p = await SharedPreferences.getInstance();
+    final themeName = p.getString('theme_mode');
     final isDark = p.getBool('isDark') ?? false;
     final enabledSources = p.getStringList('enabled_sources');
     final shareMin = p.getBool('is_share_minimal') ?? false;
@@ -250,7 +254,11 @@ class AppState extends ChangeNotifier {
     final recents = p.getStringList('recent_searches') ?? [];
     final favorites = p.getStringList('favorites') ?? [];
 
-    _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    _themeMode = AppThemeMode.values
+            .firstWhere((m) => m.name == themeName,
+                orElse: () => isDark
+                    ? AppThemeMode.dark
+                    : AppThemeMode.light);
     // Drop sources that don't exist on this platform (e.g. prefs saved
     // on mobile then hit from a web browser).
     final storedSources = enabledSources?.toSet().intersection(allSources) ?? {};
@@ -264,12 +272,21 @@ class AppState extends ChangeNotifier {
   }
 
   void toggleTheme() {
-    _themeMode =
-        _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    final next = switch (_themeMode) {
+      AppThemeMode.light => AppThemeMode.dark,
+      AppThemeMode.dark => AppThemeMode.highContrast,
+      AppThemeMode.highContrast => AppThemeMode.light,
+    };
+    setAppTheme(next);
+  }
+
+  void setAppTheme(AppThemeMode mode) {
+    _themeMode = mode;
     notifyListeners();
     unawaited(() async {
       final p = await SharedPreferences.getInstance();
-      await p.setBool('isDark', _themeMode == ThemeMode.dark);
+      await p.setString('theme_mode', mode.name);
+      await p.setBool('isDark', mode == AppThemeMode.dark);
     }());
   }
 

@@ -17,7 +17,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../strings.dart' as s;
-import '../theme.dart';
 import 'home_screen.dart';
 
 /// Animated branded Splash Screen showing the Libras Dictionary logo.
@@ -76,8 +75,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+    final scheme = Theme.of(context).colorScheme;
+    final bgColor = scheme.surface;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -92,7 +91,7 @@ class _SplashScreenState extends State<SplashScreen>
                 Container(
                   padding: const EdgeInsets.all(36),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.black : AppColors.primaryBrand,
+                    color: scheme.primary,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
@@ -102,7 +101,7 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ],
                     border: Border.all(
-                      color: isDark ? Colors.white24 : Colors.blue.shade200,
+                      color: scheme.outline,
                       width: 2,
                     ),
                   ),
@@ -124,7 +123,7 @@ class _SplashScreenState extends State<SplashScreen>
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.5,
-                    color: isDark ? Colors.white : AppColors.primary,
+                    color: scheme.onSurface,
                   ),
                 ),
               ],

@@ -69,7 +69,7 @@ class _HomePageState extends State<HomePage> {
       listenable: st.appState,
       builder: (context, _) {
         final state = st.appState;
-        final isDark = state.themeMode == ThemeMode.dark;
+        final isDark = state.isDark;
         final query = state.lastSearched ?? '';
         final ranked = query.isNotEmpty
             ? st.rankResults(state.searchResults, query)
@@ -102,7 +102,14 @@ class _HomePageState extends State<HomePage> {
                 },
               ),
               IconButton(
-                icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
+                icon: Icon(
+                  state.isHighContrast
+                      ? Icons.contrast
+                      : (isDark ? Icons.light_mode : Icons.dark_mode),
+                ),
+                tooltip: state.isHighContrast
+                    ? s.themeHighContrast
+                    : (isDark ? s.themeLight : s.themeDark),
                 onPressed: state.toggleTheme,
               ),
               IconButton(
@@ -275,6 +282,7 @@ class _HomePageState extends State<HomePage> {
       itemBuilder: (context, index) => DictionaryItemCard(
         item: displayResults[index],
         disambiguation: disambiguations[index],
+        folio: index + 1,
       ),
     );
   }
@@ -347,7 +355,9 @@ class _YoutubeCard extends StatelessWidget {
             s.notFoundDictionaries,
             style: TextStyle(
               fontSize: 13,
-              color: isDark ? Colors.grey.shade400 : AppColors.neutralMuted,
+              color: isDark
+                  ? Colors.grey.shade400
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),
@@ -487,31 +497,37 @@ class _FilterChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sortedSources = enabledSources.toList()..sort();
-    return SizedBox(
-      height: 44,
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).colorScheme.outline,
+            width: 1,
+          ),
+        ),
+      ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            _AnimatedFilterChip(
+            _SteppedTab(
               source: 'Ambos',
               label: s.filterAll,
               isSelected: activeFilters.contains('Ambos'),
-              selectedColor: AppColors.primary,
               isDark: isDark,
-              bold: true,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             for (final source in sortedSources) ...[
-              _AnimatedFilterChip(
+              _SteppedTab(
                 source: source,
                 label: sourceLabel(source),
                 isSelected: activeFilters.contains(source),
-                selectedColor: AppColors.forSource(source),
                 isDark: isDark,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 4),
             ],
           ],
         ),
@@ -520,72 +536,92 @@ class _FilterChips extends StatelessWidget {
   }
 }
 
-class _AnimatedFilterChip extends StatelessWidget {
-  const _AnimatedFilterChip({
+/// One tab on the source rail. The active tab is the extended divider board
+/// (full colour, taller); the others are recessed leaves. Height is the
+/// fold, not a colour — so the selection reads even in High Contrast.
+class _SteppedTab extends StatelessWidget {
+  const _SteppedTab({
     required this.source,
     required this.label,
     required this.isSelected,
-    required this.selectedColor,
     required this.isDark,
-    this.bold = false,
   });
 
   final String source;
   final String label;
   final bool isSelected;
-  final Color selectedColor;
   final bool isDark;
-  final bool bold;
 
   @override
   Widget build(BuildContext context) {
-    final unselectedBg =
-        isDark ? const Color(0xFF2C2B30) : const Color(0xFFEFF1F5);
-    final unselectedFg = isDark ? Colors.white70 : AppColors.neutralText;
+    final scheme = Theme.of(context).colorScheme;
+    final isHighContrast = st.appState.isHighContrast;
+    final board = source == 'Ambos'
+        ? scheme.primary
+        : AppColors.forSource(source);
+    final recessedBg =
+        isDark ? const Color(0xFF2A2620) : const Color(0xFFE9E2D6);
+    final recessedFg = isDark ? Colors.white70 : scheme.onSurfaceVariant;
+    final height = isSelected ? 56.0 : 34.0;
 
-    return AnimatedScale(
-      scale: isSelected ? 1.04 : 1.0,
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
+    return GestureDetector(
+      onTap: () {
+        st.appState.onFilterChanged(source, !isSelected);
+      },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutCubic,
+        duration: const Duration(milliseconds: 90),
+        curve: Curves.linear,
+        height: height,
+        constraints: BoxConstraints(minWidth: isSelected ? 96 : 72),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isSelected ? selectedColor : unselectedBg,
-          borderRadius: BorderRadius.circular(AppRadius.chip),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: selectedColor.withValues(alpha: 0.35),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
+          color: isSelected ? board : recessedBg,
+          border: isHighContrast
+              ? Border.all(color: scheme.outline, width: 2)
               : null,
         ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(AppRadius.chip),
-            onTap: () {
-              st.appState.onFilterChanged(source, !isSelected);
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              child: AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 220),
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: (bold || isSelected)
-                      ? FontWeight.bold
-                      : FontWeight.w500,
-                  color: isSelected ? Colors.white : unselectedFg,
+        child: isSelected
+            ? FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      label.toUpperCase(),
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: isHighContrast ? 14 : 12,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      (source == 'Ambos' ? 'TODOS' : source).toUpperCase(),
+                      style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 8,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                    ),
+                  ],
                 ),
-                child: Text(label),
+              )
+            : Text(
+                label.toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: isHighContrast ? 14 : 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
+                  color: recessedFg,
+                ),
               ),
-            ),
-          ),
-        ),
       ),
     );
   }

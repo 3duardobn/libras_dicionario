@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'card.dart';
 import 'state.dart' as st;
 import 'strings.dart' as s;
+import 'theme.dart';
 
 const _sourceLabels = {
   'INES': 'INES (Dicionário INES)',
@@ -78,6 +79,36 @@ class SettingsScreen extends StatelessWidget {
           final state = st.appState;
           return ListView(
             children: [
+              ListTile(
+                title: Text(
+                  s.settingsThemeSection,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              RadioGroup<AppThemeMode>(
+                groupValue: state.appThemeMode,
+                onChanged: (mode) {
+                  if (mode != null) state.setAppTheme(mode);
+                },
+                child: const Column(
+                  children: [
+                    RadioListTile<AppThemeMode>(
+                      title: Text(s.themeLight),
+                      value: AppThemeMode.light,
+                    ),
+                    RadioListTile<AppThemeMode>(
+                      title: Text(s.themeDark),
+                      value: AppThemeMode.dark,
+                    ),
+                    RadioListTile<AppThemeMode>(
+                      title: Text(s.themeHighContrast),
+                      subtitle: Text(s.themeHighContrastSub),
+                      value: AppThemeMode.highContrast,
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(),
               ListTile(
                 title: Text(
                   s.settingsSearchSection,
