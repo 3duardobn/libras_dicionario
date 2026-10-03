@@ -49,9 +49,8 @@ class LibrasDictionaryApp extends StatelessWidget {
           title: s.appTitle,
           debugShowCheckedModeBanner: false,
           navigatorKey: st.appNavigatorKey,
-          themeMode: st.appState.themeMode,
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
+          theme: AppTheme.forMode(st.appState.appThemeMode),
+          themeMode: ThemeMode.light,
           home: showSplash ? const SplashScreen() : const HomePage(),
           builder: (context, child) => _WebFrame(
             child: child ?? const SizedBox.shrink(),
@@ -77,7 +76,10 @@ class _WebFrame extends StatelessWidget {
         final theme = Theme.of(context);
         final isDark = theme.brightness == Brightness.dark;
         return Container(
-          color: isDark ? const Color(0xFF141318) : const Color(0xFFE8E6EE),
+          color: Color.alphaBlend(
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+            theme.colorScheme.surface,
+          ),
           alignment: Alignment.topCenter,
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
           child: ConstrainedBox(
@@ -85,7 +87,7 @@ class _WebFrame extends StatelessWidget {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AppRadius.card),
-                border: Border.all(color: theme.dividerColor),
+                border: Border.all(color: theme.colorScheme.outline, width: isDark ? 1 : 1),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.15),

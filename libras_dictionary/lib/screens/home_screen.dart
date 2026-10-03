@@ -69,7 +69,7 @@ class _HomePageState extends State<HomePage> {
       listenable: st.appState,
       builder: (context, _) {
         final state = st.appState;
-        final isDark = state.themeMode == ThemeMode.dark;
+        final isDark = state.isDark;
         final query = state.lastSearched ?? '';
         final ranked = query.isNotEmpty
             ? st.rankResults(state.searchResults, query)
@@ -91,7 +91,7 @@ class _HomePageState extends State<HomePage> {
             title: const Text(s.appTitle),
             actions: [
               IconButton(
-                icon: const Icon(Icons.star),
+                icon: const Icon(Icons.folder_outlined),
                 tooltip: s.favoritesTitle,
                 onPressed: () {
                   Navigator.push(
@@ -102,7 +102,14 @@ class _HomePageState extends State<HomePage> {
                 },
               ),
               IconButton(
-                icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
+                icon: Icon(
+                  state.isHighContrast
+                      ? Icons.contrast
+                      : (isDark ? Icons.light_mode : Icons.dark_mode),
+                ),
+                tooltip: state.isHighContrast
+                    ? s.themeHighContrast
+                    : (isDark ? s.themeLight : s.themeDark),
                 onPressed: state.toggleTheme,
               ),
               IconButton(
@@ -347,7 +354,9 @@ class _YoutubeCard extends StatelessWidget {
             s.notFoundDictionaries,
             style: TextStyle(
               fontSize: 13,
-              color: isDark ? Colors.grey.shade400 : AppColors.neutralMuted,
+              color: isDark
+                  ? Colors.grey.shade400
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),
@@ -355,7 +364,7 @@ class _YoutubeCard extends StatelessWidget {
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.sourceYoutube,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.onColor(AppColors.sourceYoutube),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.input),
@@ -488,27 +497,24 @@ class _FilterChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final sortedSources = enabledSources.toList()..sort();
     return SizedBox(
-      height: 44,
+      height: 48,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         child: Row(
           children: [
-            _AnimatedFilterChip(
+            _SourceChip(
               source: 'Ambos',
               label: s.filterAll,
               isSelected: activeFilters.contains('Ambos'),
-              selectedColor: AppColors.primary,
               isDark: isDark,
-              bold: true,
             ),
             const SizedBox(width: 8),
             for (final source in sortedSources) ...[
-              _AnimatedFilterChip(
+              _SourceChip(
                 source: source,
                 label: sourceLabel(source),
                 isSelected: activeFilters.contains(source),
-                selectedColor: AppColors.forSource(source),
                 isDark: isDark,
               ),
               const SizedBox(width: 8),
@@ -520,69 +526,73 @@ class _FilterChips extends StatelessWidget {
   }
 }
 
-class _AnimatedFilterChip extends StatelessWidget {
-  const _AnimatedFilterChip({
+/// Chip limpo de fonte: cor pastel suave quando ativo, neutro quando não.
+/// A cor pastel só preenche a área do próprio chip, nunca a interface.
+class _SourceChip extends StatelessWidget {
+  const _SourceChip({
     required this.source,
     required this.label,
     required this.isSelected,
-    required this.selectedColor,
     required this.isDark,
-    this.bold = false,
   });
 
   final String source;
   final String label;
   final bool isSelected;
-  final Color selectedColor;
   final bool isDark;
-  final bool bold;
 
   @override
   Widget build(BuildContext context) {
-    final unselectedBg =
-        isDark ? const Color(0xFF2C2B30) : const Color(0xFFEFF1F5);
-    final unselectedFg = isDark ? Colors.white70 : AppColors.neutralText;
+    final scheme = Theme.of(context).colorScheme;
+    final isHighContrast = st.appState.isHighContrast;
 
-    return AnimatedScale(
-      scale: isSelected ? 1.04 : 1.0,
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutCubic,
-        decoration: BoxDecoration(
-          color: isSelected ? selectedColor : unselectedBg,
-          borderRadius: BorderRadius.circular(AppRadius.chip),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: selectedColor.withValues(alpha: 0.35),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(AppRadius.chip),
-            onTap: () {
-              st.appState.onFilterChanged(source, !isSelected);
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              child: AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 220),
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: (bold || isSelected)
-                      ? FontWeight.bold
-                      : FontWeight.w500,
-                  color: isSelected ? Colors.white : unselectedFg,
-                ),
-                child: Text(label),
-              ),
+    // Cor de fundo quando selecionado. "Todos" usa a cor primária do tema
+    // (sólida, com contraste garantido em todos os temas); as fontes usam
+    // a cor pastel correspondente.
+    final selectedBg = source == 'Ambos'
+        ? scheme.primary
+        : (isHighContrast ? scheme.primary : AppColors.forSource(source));
+    final selectedFg = source == 'Ambos'
+        ? scheme.onPrimary
+        : (isHighContrast
+            ? scheme.onPrimary
+            : AppColors.onColor(selectedBg));
+
+    final border = BorderSide(
+      color: isHighContrast
+          ? scheme.outline
+          : (isSelected ? selectedBg : scheme.outline),
+      width: isHighContrast ? 2 : 1,
+    );
+
+    return Material(
+      color: isSelected ? selectedBg : scheme.surfaceContainerHighest,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.chip),
+        side: border,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () {
+          st.appState.onFilterChanged(source, !isSelected);
+        },
+        child: Container(
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: isHighContrast ? 15 : 13,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected
+                  ? selectedFg
+                  : (isHighContrast
+                      ? scheme.onSurface
+                      : scheme.onSurfaceVariant),
             ),
           ),
         ),

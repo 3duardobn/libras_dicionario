@@ -15,8 +15,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:libras_dictionary/card.dart';
 import 'package:libras_dictionary/database.dart';
 import 'package:libras_dictionary/main.dart';
+import 'package:libras_dictionary/models.dart';
 import 'package:libras_dictionary/state.dart' as st;
 import 'package:libras_dictionary/strings.dart' as s;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -132,10 +134,16 @@ void main() {
     await _pumpHome(tester);
     await _search(tester, 'casa');
 
-    expect(find.text('casa (INES)'), findsOneWidget);
-    expect(find.text('casa (RedeSurdos)'), findsOneWidget);
+    expect(find.byType(DictionaryItemCard), findsNWidgets(2));
+    expect(
+      find.descendant(
+        of: find.byType(DictionaryItemCard),
+        matching: find.text('casa'),
+      ),
+      findsNWidgets(2),
+    );
     // Exact word matching must not match "casaco".
-    expect(find.text('casaco (INES)'), findsNothing);
+    expect(find.text('casaco'), findsNothing);
   });
 
   testWidgets('filter chips narrow results to the selected source',
@@ -146,28 +154,43 @@ void main() {
     await tester.tap(find.text('Rede Surdos'));
     await tester.pumpAndSettle();
 
-    expect(find.text('casa (RedeSurdos)'), findsOneWidget);
-    expect(find.text('casa (INES)'), findsNothing);
+    expect(find.byType(DictionaryItemCard), findsOneWidget);
 
     // Back to all sources.
     await tester.tap(find.text(s.filterAll));
     await tester.pumpAndSettle();
 
-    expect(find.text('casa (INES)'), findsOneWidget);
-    expect(find.text('casa (RedeSurdos)'), findsOneWidget);
+    expect(find.byType(DictionaryItemCard), findsNWidgets(2));
   });
 
-  testWidgets('favorites can be added and are listed', (tester) async {
+  testWidgets('saved signs appear in folders screen', (tester) async {
     await _pumpHome(tester);
-    await _search(tester, 'casa');
 
-    await tester.tap(find.byTooltip(s.favoriteAdd).first);
-    await tester.pump();
+    await tester.runAsync(() async {
+      final id = await st.appState.createFolder('Meus sinais', 0xFFE57373);
+      final item = DictItem(
+        title: 'casa',
+        source: 'INES',
+        description: 'Moradia.',
+      );
+      await st.appState.addToFolder(id, item);
+    });
 
     await tester.tap(find.byTooltip(s.favoritesTitle));
     await tester.pumpAndSettle();
 
-    expect(find.text('casa (INES)'), findsOneWidget);
+    expect(find.text('Meus sinais'), findsOneWidget);
+    await tester.tap(find.text('Meus sinais'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DictionaryItemCard), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(DictionaryItemCard),
+        matching: find.text('casa'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('failed sources show a warning banner when database fails',
@@ -219,14 +242,14 @@ void main() {
     await _pumpHome(tester);
     await _search(tester, 'casa');
 
-    expect(find.text('casa (INES)'), findsOneWidget);
+    expect(find.byType(DictionaryItemCard), findsNWidgets(2));
 
     // Tap clear button
     await tester.tap(find.byIcon(Icons.clear));
     await tester.pumpAndSettle();
 
     // Results are cleared
-    expect(find.text('casa (INES)'), findsNothing);
+    expect(find.byType(DictionaryItemCard), findsNothing);
     // Recent searches are shown
     expect(find.text(s.recentSearches), findsOneWidget);
     expect(find.widgetWithText(InputChip, 'casa'), findsOneWidget);
