@@ -27,6 +27,10 @@ abstract class AppColors {
   static const Color sourceUfv = Color(0xFFEF9A9A); // vermelho
   static const Color sourceLibrasAcademica = Color(0xFFCE93D8); // roxo
   static const Color sourceSpreadTheSign = Color(0xFFFFCC80); // laranja
+  static const Color sourceFesai = Color(0xFF80DEEA); // ciano/turquesa
+  static const Color sourceEconomia = Color(0xFFFFE082); // âmbar/dourado
+  static const Color sourcePibic = Color(0xFFF48FB1); // rosa suave
+  static const Color sourceCcb = Color(0xFFD1C4E9); // lavanda
   static const Color sourceYoutube = Color(0xFFE57373); // vermelho
   static const Color sourceFallback = Color(0xFFBDBDBD);
 
@@ -43,6 +47,14 @@ abstract class AppColors {
         return sourceLibrasAcademica;
       case 'SpreadTheSign':
         return sourceSpreadTheSign;
+      case 'FESAI':
+        return sourceFesai;
+      case 'Economia':
+        return sourceEconomia;
+      case 'PIBIC':
+        return sourcePibic;
+      case 'CCB':
+        return sourceCcb;
       case 'YouTube':
         return sourceYoutube;
       default:

@@ -53,6 +53,10 @@ const allDictionarySources = [
   'UFV',
   'LibrasAcademicaUFF',
   'SpreadTheSign',
+  'FESAI',
+  'Economia',
+  'PIBIC',
+  'CCB',
 ];
 
 /// Executa busca 100% offline no banco local SQLite (FTS5 + exato).

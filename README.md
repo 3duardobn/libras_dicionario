@@ -28,13 +28,17 @@ sua conta e risco.
 
 ## Fontes
 
-| Fonte | Instituição |
-|-------|-------------|
+| Fonte | Instituição / Projeto |
+|-------|-----------------------|
 | INES | Instituto Nacional de Educação de Surdos |
 | Rede Surdos | Universidade Federal do Ceará (UFC) |
 | UFV | Universidade Federal de Viçosa |
 | Libras Acadêmica | Universidade Federal Fluminense (UFF) |
 | SpreadTheSign | European Sign Language Centre |
+| FESAI | Ferramenta de Sinais em Acessibilidade e Inclusão (Tecnologia/TI) |
+| Economia | Glossário de Sinais-Termo da Economia |
+| PIBIC | Projeto PIBIC (Design, Animação e Fotografia) |
+| CCB | Congregação Cristã no Brasil (Sinais Religiosos) |
 
 Os direitos dos vídeos e conteúdos pertencem às instituições de origem; o uso
 neste app é para fins educacionais e de acessibilidade (créditos completos na

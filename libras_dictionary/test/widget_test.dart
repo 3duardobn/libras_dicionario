@@ -151,12 +151,14 @@ void main() {
     await _pumpHome(tester);
     await _search(tester, 'casa');
 
+    await tester.ensureVisible(find.text('Rede Surdos'));
     await tester.tap(find.text('Rede Surdos'));
     await tester.pumpAndSettle();
 
     expect(find.byType(DictionaryItemCard), findsOneWidget);
 
     // Back to all sources.
+    await tester.ensureVisible(find.text(s.filterAll));
     await tester.tap(find.text(s.filterAll));
     await tester.pumpAndSettle();
 

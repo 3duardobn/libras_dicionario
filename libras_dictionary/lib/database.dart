@@ -45,7 +45,7 @@ class LibrasDatabase {
   Future<Database> _initDatabase() async {
     final docsDir = await getApplicationDocumentsDirectory();
     final dbPath = p.join(docsDir.path, 'libras.db');
-    const dbVersion = 3;
+    const dbVersion = 4;
 
     // Se o banco ainda não foi copiado do asset para a pasta local ou precisa de atualização
     final file = File(dbPath);

@@ -12,7 +12,7 @@ Primary: Eduardo and other Portuguese speakers learning Libras as a second langu
 
 ## Product Purpose
 
-A mobile dictionary that searches multiple Libras sign sources simultaneously and surfaces videos, descriptions, and links in one place. Exists because no single source covers everything; the app aggregates INES, RedeSurdos, UFV, LibrasAcademicaUFF, SpreadTheSign, and YouTube into a unified search. Success means finding the sign you need, fast, without opening five browser tabs.
+A mobile dictionary that searches multiple Libras sign sources simultaneously and surfaces videos, descriptions, and links in one place. Exists because no single source covers everything; the app aggregates INES, RedeSurdos, UFV, LibrasAcademicaUFF, SpreadTheSign, FESAI, Economia, PIBIC, CCB, and YouTube into a unified search. Success means finding the sign you need, fast, without opening multiple browser tabs.
 
 ## Positioning
 
@@ -24,7 +24,7 @@ Mobile-first, used in quick bursts while studying or in a real conversation cont
 
 ## Capabilities and Constraints
 
-- Multi-source simultaneous search with whole-word matching and per-source filters (INES, RedeSurdos, UFV, Libras Acadêmica UFF, SpreadTheSign, YouTube).
+- Multi-source simultaneous search with whole-word matching and per-source filters (INES, RedeSurdos, UFV, Libras Acadêmica UFF, SpreadTheSign, FESAI, Economia, PIBIC, CCB, YouTube).
 - Native mp4 playback or the official embedded YouTube player; one video at a time.
 - Autocomplete from the INES vocabulary (~5.800 words).
 - Favorites and recent searches persisted on device; optional offline caching of the INES vocabulary.

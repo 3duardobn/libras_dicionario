@@ -26,6 +26,10 @@ const _sourceLabels = {
   'RedeSurdos': 'Rede Surdos (UFC)',
   'LibrasAcademicaUFF': 'Libras Acadêmica (UFF)',
   'SpreadTheSign': 'SpreadTheSign',
+  'FESAI': 'FESAI (Tecnologia e Informática)',
+  'Economia': 'Glossário de Economia',
+  'PIBIC': 'PIBIC (Design e Audiovisual)',
+  'CCB': 'CCB (Sinais Religiosos)',
 };
 
 /// Short display label for a source id, shared by filter chips and
@@ -36,6 +40,10 @@ String sourceLabel(String source) {
       return 'Rede Surdos';
     case 'LibrasAcademicaUFF':
       return 'Libras Acadêmica';
+    case 'Economia':
+      return 'Economia';
+    case 'CCB':
+      return 'CCB';
     default:
       return source;
   }
@@ -191,6 +199,30 @@ class SettingsScreen extends StatelessWidget {
                 'European Sign Language Centre',
                 'https://www.spreadthesign.com/',
                 'SpreadTheSign é um dicionário internacional. Os direitos pertencem ao European Sign Language Centre.',
+              ),
+              _buildSourceCredit(
+                'FESAI',
+                'FESAI - Acessibilidade e Inclusão',
+                'https://www.fesai.com.br/',
+                'Glossário de sinais voltado para Tecnologia da Informação e Desenvolvimento de Software.',
+              ),
+              _buildSourceCredit(
+                'Glossário de Economia',
+                'Glossário de sinais-termo da Economia',
+                'https://glossariolibras.github.io/economia/',
+                'Sinais, conceitos e contextos em Libras sobre termos econômicos.',
+              ),
+              _buildSourceCredit(
+                'PIBIC (Design e Audiovisual)',
+                'Projeto PIBIC - Dicionário LIBRAS',
+                'https://glossariolibras.wixsite.com/projetopibic',
+                'Glossário de termos técnicos de Design, Animação e Fotografia.',
+              ),
+              _buildSourceCredit(
+                'CCB (Sinais Religiosos)',
+                'Congregação Cristã no Brasil',
+                'https://congregacaocristanobrasil.org.br/libras',
+                'Glossário de Sinais Religiosos e Litúrgicos da Congregação Cristã no Brasil.',
               ),
               _buildSourceCredit(
                 'Ícone de Libras',

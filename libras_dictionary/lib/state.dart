@@ -37,11 +37,19 @@ const mobileSources = {
   'RedeSurdos',
   'LibrasAcademicaUFF',
   'SpreadTheSign',
+  'FESAI',
+  'Economia',
+  'PIBIC',
+  'CCB',
 };
 const webSources = {
   'INES',
   'RedeSurdos',
   'LibrasAcademicaUFF',
+  'FESAI',
+  'Economia',
+  'PIBIC',
+  'CCB',
 };
 
 /// Sources available on the current platform. Browsers cannot reach
