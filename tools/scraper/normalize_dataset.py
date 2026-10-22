@@ -108,6 +108,10 @@ def build_unified_dataset():
         "redesurdos.json",
         "ufv.json",
         "spreadthesign.json",
+        "fesai.json",
+        "economia.json",
+        "pibic.json",
+        "ccb.json",
     ]
 
     all_entries = []
