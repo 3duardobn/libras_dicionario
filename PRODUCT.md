@@ -29,7 +29,7 @@ Mobile-first, used in quick bursts while studying or in a real conversation cont
 - Autocomplete from the INES vocabulary (~5.800 words).
 - Favorites and recent searches persisted on device; optional offline caching of the INES vocabulary.
 - Light/dark theme, sign sharing, optional YouTube search button.
-- Flutter with pure Dart; GPL-3.0-only; Android application id `dev.edbn.libras_dictionary` (version 1.0.6+5).
+- Flutter with pure Dart; GPL-3.0-only; Android application id `dev.edbn.libras_dictionary` (version 1.1.0+8).
 
 ## Brand Commitments
 
