@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/3duardobn/libras_dicionario/actions/workflows/ci.yml/badge.svg)](https://github.com/3duardobn/libras_dicionario/actions/workflows/ci.yml)
 [![Licença: GPLv3](https://img.shields.io/badge/licen%C3%A7a-GPLv3-blue.svg)](LICENSE)
+[![0rwx: x](https://img.shields.io/badge/0rwx-x%20%7C%20execute-critical?style=flat-square)](https://0rwx.com)
 
 App mobile para pesquisar sinais de Libras (Língua Brasileira de Sinais) em
 múltiplas fontes simultaneamente. Digite uma palavra em português e veja o
@@ -88,6 +89,12 @@ flutter test
 - **Política de privacidade**:
   [libras_dictionary/docs/privacy-policy.md](libras_dictionary/docs/privacy-policy.md)
 - Tags `v*` disparam o CI que publica APKs e App Bundle no GitHub Releases
+
+## Transparência de IA (0rwx: x)
+
+Este projeto adota a classificação do **[Framework 0rwx](https://0rwx.com/)** no nível **x (Execute / "I curate")**.
+
+Desenvolvido em modelo *vibe coding* com assistência de Claude, Jules, Gemini e Antigravity. O mantenedor atua como curador e testador no dispositivo real. Consulte [0rwx.md](0rwx.md) para diretrizes de auditoria e contribuição.
 
 ## Licença
 
